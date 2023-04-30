@@ -1,5 +1,6 @@
-#[allow(dead_code)]
-mod model;
+#![allow(dead_code)]
+
+pub mod model;
 
 pub fn add(left: usize, right: usize) -> usize {
     left + right
