@@ -61,6 +61,10 @@ impl Board {
         Ok(())
     }
 
+    pub fn placed_oceans(&self) -> usize {
+        self.placed_oceans
+    }
+
     fn is_valid_placement(&self, tile: &Tile, row: usize, column: usize) -> bool {
         if Self::is_invalid_position(row, column) || self.tiles[row][column] != Tile::Empty {
             return false;

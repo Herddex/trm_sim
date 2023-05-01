@@ -1,6 +1,7 @@
 use crate::model::game_data::{GameData, MAX_OXYGEN, MAX_TEMPERATURE};
 use crate::model::game_data::board::tile::Tile;
 use crate::model::resource::Resource;
+use crate::model::tag::Tag;
 
 pub enum Mutation {
     Normal(NormalMutation),
@@ -16,6 +17,8 @@ pub enum NormalMutation {
     OxygenIncreaseMutation,
     VictoryPointMutation(i32),
     TileQueuingMutation(Tile),
+    TagMutation(Tag),
+    CardDrawMutation(i32),
     PassMutation,
 }
 
@@ -94,6 +97,12 @@ impl GameData {
             NormalMutation::VictoryPointMutation(amount) => self.victory_points += amount,
             NormalMutation::TileQueuingMutation(tile) => {
                 self.tile_queue.push(tile.clone());
+            }
+            NormalMutation::TagMutation(tag) => {
+                *self.tags.get_mut(tag).expect("Tag should be in the map") += 1;
+            }
+            NormalMutation::CardDrawMutation(amount) => {
+                self.draw_cards(*amount);
             }
             NormalMutation::PassMutation => {
                 self.generation += 1;

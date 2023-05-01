@@ -6,6 +6,7 @@ pub enum Tag {
     Jovian,
     Plant,
     Microbe,
-    Energy,
+    Power,
     Science,
+    City,
 }

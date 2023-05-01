@@ -84,7 +84,7 @@ impl GameData {
                 (Tag::Space, 0),
                 (Tag::Earth, 0),
                 (Tag::Jovian, 0),
-                (Tag::Energy, 0),
+                (Tag::Power, 0),
                 (Tag::Science, 0),
                 (Tag::Plant, 0),
                 (Tag::Microbe, 0)
