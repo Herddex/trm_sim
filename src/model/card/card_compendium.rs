@@ -1,21 +1,27 @@
 use std::collections::HashMap;
+use std::sync::Arc;
+use lazy_static::lazy_static;
 
 use crate::model::card::{Card, CardId};
 use crate::model::card::card_builder::CardBuilder;
 use crate::model::game_data::board::tile::Tile;
 use crate::model::game_data::board::tile::Tile::{Greenery, Ocean};
 use crate::model::game_data::mutation::NormalMutation::{CardDrawMutation, OxygenIncreaseMutation, ProductionMutation, ResourceMutation, TemperatureIncreaseMutation, TileQueuingMutation, TrMutation};
-use crate::model::game_data::requirement::{MaxOceanRequirement, MaxOxygenRequirement, MaxTemperatureRequirement, MinOceanRequirement, MinOxygenRequirement, MinTemperatureRequirement, TagRequirement};
+use crate::model::game_data::requirement::NewRequirement;
 use crate::model::resource::Resource::{Energy, Heat, MegaCredit, Plant, Steel, Titanium};
 use crate::model::tag::Tag;
 use crate::model::tag::Tag::{Builder, City, Earth, Jovian, Microbe, Power, Science, Space};
 
-pub fn build_card_compendium() -> HashMap<CardId, Card> {
+lazy_static! {
+    static ref CARD_COMPENDIUM: HashMap<CardId, Arc<Card>> = build_card_compendium();
+}
+
+pub fn build_card_compendium() -> HashMap<CardId, Arc<Card>> {
     HashMap::from([
         (1, CardBuilder::new()
             .cost(8)
             .tags(vec![Jovian, Builder])
-            .requirement(Box::new(MaxOxygenRequirement(5)))
+            .requirement(NewRequirement::MaxOxygen(5))
             .victory_points(2)
             .build()),
         (3, CardBuilder::new()
@@ -26,7 +32,7 @@ pub fn build_card_compendium() -> HashMap<CardId, Card> {
             .build()),
         (4, CardBuilder::new()
             .cost(13)
-            .requirement(Box::new(MinOceanRequirement(3)))
+            .requirement(NewRequirement::MinOcean(3))
             .mutation(ProductionMutation(MegaCredit, -1))
             .mutation(ProductionMutation(Plant, 2))
             .build()),
@@ -48,7 +54,7 @@ pub fn build_card_compendium() -> HashMap<CardId, Card> {
             .build()),
         (16, martian_city()
             .cost(24)
-            .requirement(Box::new(MaxOxygenRequirement(7)))
+            .requirement(NewRequirement::MaxOxygen(7))
             .mutation(ProductionMutation(MegaCredit, 3))
             .mutation(ResourceMutation(Plant, 3))
             .victory_points(1)
@@ -60,7 +66,7 @@ pub fn build_card_compendium() -> HashMap<CardId, Card> {
         (18, CardBuilder::new()
             .cost(28)
             .tags(vec![Jovian, Space])
-            .requirement(Box::new(MinOxygenRequirement(2)))
+            .requirement(NewRequirement::MinOxygen(2))
             .mutation(ProductionMutation(Heat, 2))
             .mutation(ProductionMutation(Plant, 2))
             .victory_points(2)
@@ -79,14 +85,14 @@ pub fn build_card_compendium() -> HashMap<CardId, Card> {
         (26, CardBuilder::new()
             .cost(16)
             .tags(vec![Tag::Plant, Builder])
-            .requirement(Box::new(MinTemperatureRequirement(-12)))
+            .requirement(NewRequirement::MinTemperature(-12))
             .mutation(ResourceMutation(Plant, 3))
             .mutation(ProductionMutation(MegaCredit, 2))
             .victory_points(1)
             .build()),
         (29, martian_city()
             .cost(16)
-            .requirement(Box::new(MaxOxygenRequirement(9)))
+            .requirement(NewRequirement::MaxOxygen(9))
             .mutation(ProductionMutation(MegaCredit, 3))
             .build()),
         (30, CardBuilder::new()
@@ -135,7 +141,7 @@ pub fn build_card_compendium() -> HashMap<CardId, Card> {
         (42, CardBuilder::new()
             .cost(6)
             .tags(vec![Microbe])
-            .requirement(Box::new(MaxTemperatureRequirement(-18)))
+            .requirement(NewRequirement::MaxTemperature(-18))
             .mutation(ProductionMutation(Plant, 1))
             .build()),
         (43, CardBuilder::new()
@@ -153,7 +159,7 @@ pub fn build_card_compendium() -> HashMap<CardId, Card> {
         (47, CardBuilder::new()
             .cost(10)
             .tags(vec![Tag::Plant])
-            .requirement(Box::new(MinOceanRequirement(5)))
+            .requirement(NewRequirement::MinOcean(5))
             .mutation(ProductionMutation(Plant, 2))
             .mutation(ResourceMutation(Plant, 1))
             .build()),
@@ -164,7 +170,7 @@ pub fn build_card_compendium() -> HashMap<CardId, Card> {
             .build()),
         (53, CardBuilder::new()
             .cost(18)
-            .requirement(Box::new(MinTemperatureRequirement(0)))
+            .requirement(NewRequirement::MinTemperature(0))
             .mutation(TileQueuingMutation(Ocean))
             .mutation(TileQueuingMutation(Ocean))
             .victory_points(2)
@@ -172,7 +178,7 @@ pub fn build_card_compendium() -> HashMap<CardId, Card> {
         (55, CardBuilder::new()
             .cost(17)
             .tags(vec![Tag::Plant])
-            .requirement(Box::new(MinOceanRequirement(6)))
+            .requirement(NewRequirement::MinOcean(6))
             .mutation(ProductionMutation(MegaCredit, 2))
             .mutation(ProductionMutation(Plant, 3))
             .mutation(ResourceMutation(Plant, 2))
@@ -181,7 +187,7 @@ pub fn build_card_compendium() -> HashMap<CardId, Card> {
         (58, CardBuilder::new()
             .cost(32)
             .tags(vec![Jovian, Space, Power])
-            .requirement(Box::new(TagRequirement(Jovian, 1)))
+            .requirement(NewRequirement::Tag(Jovian, 1))
             .mutation(ProductionMutation(Heat, 3))
             .mutation(ProductionMutation(Energy, 3))
             .victory_points(1)
@@ -189,7 +195,7 @@ pub fn build_card_compendium() -> HashMap<CardId, Card> {
         (60, CardBuilder::new()
             .cost(13)
             .tags(vec![Tag::Plant])
-            .requirement(Box::new(MinTemperatureRequirement(-4)))
+            .requirement(NewRequirement::MinTemperature(-4))
             .mutation(ProductionMutation(Plant, 3))
             .mutation(ResourceMutation(Plant, 1))
             .victory_points(1)
@@ -232,14 +238,14 @@ pub fn build_card_compendium() -> HashMap<CardId, Card> {
         (87, CardBuilder::new()
             .cost(11)
             .tags(vec![Tag::Plant])
-            .requirement(Box::new(MinTemperatureRequirement(-16)))
+            .requirement(NewRequirement::MinTemperature(-16))
             .mutation(ProductionMutation(Plant, 1))
             .mutation(ResourceMutation(Plant, 3))
             .build()),
         (88, CardBuilder::new()
             .cost(6)
             .tags(vec![Tag::Plant])
-            .requirement(Box::new(MinTemperatureRequirement(-14)))
+            .requirement(NewRequirement::MinTemperature(-14))
             .mutation(ProductionMutation(Plant, 1))
             .mutation(ResourceMutation(Plant, 1))
             .build()),
@@ -252,7 +258,7 @@ pub fn build_card_compendium() -> HashMap<CardId, Card> {
         (93, CardBuilder::new()
             .cost(10)
             .tags(vec![Tag::Plant])
-            .requirement(Box::new(MinTemperatureRequirement(-10)))
+            .requirement(NewRequirement::MinTemperature(-10))
             .mutation(ProductionMutation(Plant, 2))
             .mutation(ResourceMutation(Plant, 2))
             .build()),
@@ -263,7 +269,7 @@ pub fn build_card_compendium() -> HashMap<CardId, Card> {
             .mutation(ProductionMutation(Energy, 1))
             .build()),
         (108, martian_city()
-            .requirement(Box::new(MinOxygenRequirement(12)))
+            .requirement(NewRequirement::MinOxygen(12))
             .mutation(ProductionMutation(MegaCredit, 4))
             .mutation(ResourceMutation(Plant, 2))
             .victory_points(1)
@@ -277,7 +283,7 @@ pub fn build_card_compendium() -> HashMap<CardId, Card> {
         (114, CardBuilder::new()
             .cost(11)
             .tags(vec![Science])
-            .requirement(Box::new(MinOxygenRequirement(7)))
+            .requirement(NewRequirement::MinOxygen(7))
             .victory_points(2)
             .build()),
         (117, CardBuilder::new()
@@ -288,7 +294,7 @@ pub fn build_card_compendium() -> HashMap<CardId, Card> {
         (118, CardBuilder::new()
             .cost(16)
             .tags(vec![Tag::Plant])
-            .requirement(Box::new(MinTemperatureRequirement(4)))
+            .requirement(NewRequirement::MinTemperature(4))
             .mutation(ProductionMutation(MegaCredit, 2))
             .mutation(ProductionMutation(Plant, 2))
             .mutation(ResourceMutation(Plant, 2))
@@ -296,13 +302,13 @@ pub fn build_card_compendium() -> HashMap<CardId, Card> {
             .build()),
         (119, CardBuilder::new()
             .cost(2)
-            .requirement(Box::new(MaxOceanRequirement(3)))
+            .requirement(NewRequirement::MaxOcean(3))
             .victory_points(1)
             .build()),
         (122, CardBuilder::new()
             .cost(4)
             .tags(vec![Tag::Plant])
-            .requirement(Box::new(MinOceanRequirement(3)))
+            .requirement(NewRequirement::MinOcean(3))
             .mutation(ProductionMutation(Plant, 1))
             .mutation(ResourceMutation(Plant, -1))
             .build()),
@@ -320,7 +326,7 @@ pub fn build_card_compendium() -> HashMap<CardId, Card> {
         (132, CardBuilder::new()
             .cost(14)
             .tags(vec![Science, Power, Builder])
-            .requirement(Box::new(TagRequirement(Power, 2)))
+            .requirement(NewRequirement::Tag(Power, 2))
             .mutation(ProductionMutation(Energy, 3))
             .build()),
         (136, CardBuilder::new()
@@ -338,21 +344,21 @@ pub fn build_card_compendium() -> HashMap<CardId, Card> {
         (145, CardBuilder::new()
             .cost(18)
             .tags(vec![Power, Builder])
-            .requirement(Box::new(TagRequirement(Science, 2)))
+            .requirement(NewRequirement::Tag(Science, 2))
             .mutation(ProductionMutation(Energy, 3))
             .victory_points(1)
             .build()),
         (146, CardBuilder::new()
             .cost(8)
             .tags(vec![Tag::Plant])
-            .requirement(Box::new(MinOceanRequirement(3)))
+            .requirement(NewRequirement::MinOcean(3))
             .mutation(ProductionMutation(Plant, 2))
             .mutation(ResourceMutation(Plant, -2))
             .build()),
         (155, CardBuilder::new()
             .cost(16)
             .tags(vec![Science, Microbe])
-            .requirement(Box::new(MaxTemperatureRequirement(-14)))
+            .requirement(NewRequirement::MaxTemperature(-14))
             .mutation(ProductionMutation(Plant, 2))
             .build()),
         (158, CardBuilder::new()
@@ -364,7 +370,7 @@ pub fn build_card_compendium() -> HashMap<CardId, Card> {
         (159, CardBuilder::new()
             .cost(7)
             .tags(vec![Tag::Plant])
-            .requirement(Box::new(MinTemperatureRequirement(-24)))
+            .requirement(NewRequirement::MinTemperature(-24))
             .mutation(ResourceMutation(Plant, 1))
             .build()),
         (161, space_event()
@@ -380,14 +386,14 @@ pub fn build_card_compendium() -> HashMap<CardId, Card> {
         (168, CardBuilder::new()
             .cost(6)
             .tags(vec![Power, Builder])
-            .requirement(Box::new(MinOxygenRequirement(7)))
+            .requirement(NewRequirement::MinOxygen(7))
             .mutation(ProductionMutation(Energy, 1))
             .victory_points(1)
             .build()),
         (169, CardBuilder::new()
             .cost(16)
             .tags(vec![Tag::Plant])
-            .requirement(Box::new(MinTemperatureRequirement(-6)))
+            .requirement(NewRequirement::MinTemperature(-6))
             .mutation(ProductionMutation(Plant, 1))
             .mutation(ProductionMutation(MegaCredit, 2))
             .mutation(ResourceMutation(Plant, 1))
@@ -408,7 +414,7 @@ pub fn build_card_compendium() -> HashMap<CardId, Card> {
         (176, CardBuilder::new()
             .cost(10)
             .tags(vec![Tag::Plant, Builder])
-            .requirement(Box::new(MinTemperatureRequirement(-20)))
+            .requirement(NewRequirement::MinTemperature(-20))
             .mutation(ProductionMutation(MegaCredit, 1))
             .mutation(ResourceMutation(Plant, 2))
             .victory_points(1)
@@ -429,7 +435,7 @@ pub fn build_card_compendium() -> HashMap<CardId, Card> {
         (181, CardBuilder::new()
             .cost(5)
             .event()
-            .requirement(Box::new(MinTemperatureRequirement(2)))
+            .requirement(NewRequirement::MinTemperature(2))
             .mutation(TileQueuingMutation(Ocean))
             .build()),
         (182, martian_city()
@@ -445,13 +451,13 @@ pub fn build_card_compendium() -> HashMap<CardId, Card> {
         (191, CardBuilder::new()
             .cost(8)
             .event()
-            .requirement(Box::new(MinTemperatureRequirement(-8)))
+            .requirement(NewRequirement::MinTemperature(-8))
             .mutation(TileQueuingMutation(Ocean))
             .build()),
         (193, CardBuilder::new()
             .cost(15)
             .tags(vec![Tag::Plant])
-            .requirement(Box::new(TagRequirement(Science, 2)))
+            .requirement(NewRequirement::Tag(Science, 2))
             .mutation(TileQueuingMutation(Greenery))
             .build()),
         (203, CardBuilder::new()
@@ -465,7 +471,9 @@ pub fn build_card_compendium() -> HashMap<CardId, Card> {
             .mutation(ProductionMutation(Energy, -1))
             .mutation(TrMutation(2))
             .build()),
-    ])
+    ]).into_iter()
+        .map(|(k, v)| (k as usize, Arc::new(v)))
+        .collect()
 }
 
 fn space_event() -> CardBuilder {

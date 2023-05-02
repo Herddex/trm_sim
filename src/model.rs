@@ -1,4 +1,4 @@
 mod resource;
 pub(crate) mod game_data;
-mod card;
+pub(crate) mod card;
 mod tag;

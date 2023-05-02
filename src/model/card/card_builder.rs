@@ -1,13 +1,14 @@
 use crate::model::card::Card;
+use crate::model::game_data::mutation::Mutation;
 use crate::model::game_data::mutation::NormalMutation;
 use crate::model::game_data::mutation::NormalMutation::{ResourceMutation, TagMutation, VictoryPointMutation};
-use crate::model::game_data::requirement::{NoRequirement, Requirement};
+use crate::model::game_data::requirement::NewRequirement;
 use crate::model::resource::Resource;
 use crate::model::tag::Tag;
 
 pub struct CardBuilder {
     cost: i32,
-    requirement: Box<dyn Requirement>,
+    requirement: Option<NewRequirement>,
     tags: Vec<Tag>,
     victory_points: i32,
     mutations: Vec<NormalMutation>,
@@ -18,7 +19,7 @@ impl CardBuilder {
     pub fn new() -> Self {
         Self {
             cost: 0,
-            requirement: Box::new(NoRequirement),
+            requirement: None,
             tags: Vec::new(),
             victory_points: 0,
             mutations: Vec::new(),
@@ -41,8 +42,8 @@ impl CardBuilder {
         self
     }
 
-    pub fn requirement(mut self, requirement: Box<dyn Requirement>) -> Self {
-        self.requirement = requirement;
+    pub fn requirement(mut self, requirement: NewRequirement) -> Self {
+        self.requirement = Some(requirement);
         self
     }
 
@@ -73,7 +74,7 @@ impl CardBuilder {
 
         Card {
             requirement: self.requirement,
-            immediate_effects: NormalMutation::CompositeMutation(mutations),
+            immediate_effects: Mutation::Normal(NormalMutation::CompositeMutation(mutations)),
         }
     }
 }

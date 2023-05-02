@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 pub mod model;
+mod controller;
 
 pub fn add(left: usize, right: usize) -> usize {
     left + right

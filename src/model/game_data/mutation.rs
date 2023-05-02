@@ -1,3 +1,4 @@
+use crate::model::card::CardId;
 use crate::model::game_data::{GameData, MAX_OXYGEN, MAX_TEMPERATURE};
 use crate::model::game_data::board::tile::Tile;
 use crate::model::resource::Resource;
@@ -10,6 +11,7 @@ pub enum Mutation {
 
 pub enum NormalMutation {
     CompositeMutation(Vec<NormalMutation>),
+    CardPlayingMutation(CardId),
     ProductionMutation(Resource, i32),
     ResourceMutation(Resource, i32),
     TrMutation(i32),
@@ -115,6 +117,7 @@ impl GameData {
 
                 self.draw_cards(4);
             }
+            NormalMutation::CardPlayingMutation(_) => {}
         }
         Ok(())
     }
