@@ -1,7 +1,7 @@
 use crate::model::game_data::GameData;
 use crate::model::tag::Tag;
 
-pub enum NewRequirement {
+pub enum Requirement {
     MinOxygen(i32),
     MaxOxygen(i32),
     MinTemperature(i32),
@@ -11,7 +11,7 @@ pub enum NewRequirement {
     Tag(Tag, i32)
 }
 
-impl NewRequirement {
+impl Requirement {
     pub fn is_fulfilled(&self, game_data: &GameData) -> bool {
         match self {
             Self::MinOxygen(amount) => game_data.oxygen >= *amount,

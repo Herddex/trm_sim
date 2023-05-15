@@ -3,16 +3,19 @@ use std::collections::{HashMap, HashSet};
 use rand::seq::SliceRandom;
 
 use board::Board;
+use crate::model::card::card_compendium::CARD_COMPENDIUM;
 
 use crate::model::card::CardId;
 use crate::model::game_data::board::tile::Tile;
 use crate::model::resource::Resource;
 use crate::model::tag::Tag;
-use crate::model::game_data::board::map::GameMap;
+use crate::model::game_data::board::game_map::GameMap;
+use crate::model::game_data::game_memento::GameMemento;
 
 pub(crate) mod mutation;
 pub(crate) mod board;
 pub(crate) mod requirement;
+pub(crate) mod game_memento;
 
 const INITIAL_TR: i32 = 14;
 const INITIAL_TEMPERATURE: i32 = -30;
@@ -22,8 +25,6 @@ const INITIAL_PRODUCTION: i32 = 1;
 
 const MAX_TEMPERATURE: i32 = 8;
 const MAX_OXYGEN: i32 = 14;
-
-const CARD_COUNT: usize = 150;
 
 
 #[derive(Clone)]
@@ -47,12 +48,13 @@ pub struct GameData {
 
     victory_points: i32,
 
-    tile_queue: Vec<Tile>,
+    tile_stack: Vec<Tile>,
 }
 
 impl GameData {
-    pub fn new(map: GameMap) -> GameData {
-        let mut cards_to_be_drawn = Vec::from_iter(1..=CARD_COUNT);
+    pub fn new(map: &'static GameMap) -> GameData {
+        let mut cards_to_be_drawn =
+            Vec::from_iter(CARD_COMPENDIUM.keys().map(|key| *key));
 
         let mut rng = rand::thread_rng();
         cards_to_be_drawn.shuffle(&mut rng);
@@ -96,8 +98,17 @@ impl GameData {
             played_cards: HashSet::new(),
             cards_to_be_drawn,
 
-            victory_points: 0,
-            tile_queue: Vec::new(),
+            victory_points: INITIAL_TR,
+            tile_stack: Vec::new(),
         }
+    }
+
+    pub fn save(&self) -> GameMemento {
+        GameMemento::new(self.clone())
+    }
+
+    fn resource(&mut self, resource: &Resource) -> &mut i32 {
+        self.resources.get_mut(resource)
+            .expect("GameData.resources should have every resource as a key")
     }
 }
