@@ -1,4 +1,5 @@
-pub(crate) mod resource;
-pub(crate) mod game_data;
 pub(crate) mod card;
-mod tag;
+pub(crate) mod game;
+pub(crate) mod invalid_action_error;
+pub(crate) mod resource;
+pub(crate) mod tag;

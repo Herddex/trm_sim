@@ -1,20 +1,8 @@
-extern crate core;
-
+mod action;
 mod model;
-mod game;
-mod test_util;
 
-pub use game::{Game, action::{Action, standard_project::StandardProject}};
-pub use model::game_data::board::game_map::THARSIS;
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn integration_test() {
-        let mut game = Game::new(&THARSIS);
-        assert_eq!(game.do_action(Action::Card(3253453)), Err(()));
-        assert_eq!(game.do_action(Action::StandardProject(StandardProject::Asteroid)), Ok(()));
-    }
-}
+pub use action::Action;
+pub use model::card::CardId;
+pub use model::game::board::game_map::THARSIS;
+pub use model::game::Game;
+pub use model::invalid_action_error::ActionResult;

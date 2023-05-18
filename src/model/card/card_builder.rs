@@ -1,7 +1,6 @@
 use crate::model::card::{Card, CardId};
-use crate::model::game_data::mutation::normal_mutation::NormalMutation;
-use crate::model::game_data::mutation::normal_mutation::NormalMutation::{BuilderCardPaymentMutation, ResourceMutation, SpaceCardPaymentMutation, TagMutation, VictoryPointMutation};
-use crate::model::game_data::requirement::Requirement;
+use crate::model::game::mutation::Mutation;
+use crate::model::game::requirement::Requirement;
 use crate::model::resource::Resource;
 use crate::model::tag::Tag;
 use crate::model::tag::Tag::{Builder, Space};
@@ -12,7 +11,7 @@ pub struct CardBuilder {
     requirement: Option<Requirement>,
     tags: Vec<Tag>,
     victory_points: i32,
-    mutations: Vec<NormalMutation>,
+    mutations: Vec<Mutation>,
     event: bool,
 }
 
@@ -54,7 +53,7 @@ impl CardBuilder {
         self
     }
 
-    pub fn mutation(mut self, mutation: NormalMutation) -> Self {
+    pub fn mutation(mut self, mutation: Mutation) -> Self {
         self.mutations.push(mutation);
         self
     }
@@ -65,25 +64,25 @@ impl CardBuilder {
     }
 
     pub fn build(mut self) -> Card {
-        let mut normal_mutations = Vec::new();
-        normal_mutations.push(if self.tags.contains(&Builder) {
-            BuilderCardPaymentMutation(self.cost)
+        let mut mutations = Vec::new();
+        mutations.push(if self.tags.contains(&Builder) {
+            Mutation::BuilderCardPayment(self.cost)
         } else if self.tags.contains(&Space) {
-            SpaceCardPaymentMutation(self.cost)
+            Mutation::SpaceCardPayment(self.cost)
         } else {
-            ResourceMutation(Resource::MegaCredit, self.cost)
+            Mutation::Resource(Resource::MegaCredit, -self.cost)
         });
 
         if self.victory_points > 0 {
-            normal_mutations.push(VictoryPointMutation(self.victory_points))
+            mutations.push(Mutation::VictoryPoint(self.victory_points))
         }
         if !self.event {
             for tag in self.tags {
-                normal_mutations.push(TagMutation(tag))
+                mutations.push(Mutation::Tag(tag))
             }
         }
-        normal_mutations.append(&mut self.mutations);
+        mutations.append(&mut self.mutations);
 
-        Card::new(self.id, normal_mutations, self.requirement)
+        Card::new(self.id, mutations, self.requirement)
     }
 }

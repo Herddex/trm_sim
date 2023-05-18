@@ -4,10 +4,14 @@ use game_map::GameMap;
 use tile::Tile;
 use tile::Tile::*;
 
-pub(crate) mod tile;
+use crate::model::invalid_action_error::InvalidActionError;
+
 pub(crate) mod game_map;
+pub(crate) mod tile;
 
 pub const MAX_OCEANS: usize = 9;
+
+pub type BoardPosition = (usize, usize);
 
 #[derive(Clone)]
 pub struct Board {
@@ -17,8 +21,6 @@ pub struct Board {
     can_place_greenery_adjacent_to_owned_tiles: bool,
 }
 
-
-// TODO Handle VPs from cities and greenery tiles!
 impl Board {
     pub fn new(map: &'static GameMap) -> Self {
         Self {
@@ -42,27 +44,51 @@ impl Board {
     pub fn can_place(&self, tile: &Tile) -> bool {
         match tile {
             Ocean => self.placed_oceans < MAX_OCEANS,
-            City | Greenery => {
-                self.tiles.iter().enumerate()
-                    .any(|(row, tile_row)| tile_row.iter().enumerate()
-                        .any(|(column, _)| self.is_valid_placement(tile, row, column)))
-            }
-            _ => false
+            City | Greenery => self.tiles.iter().enumerate().any(|(row, tile_row)| {
+                tile_row
+                    .iter()
+                    .enumerate()
+                    .any(|(column, _)| self.is_valid_placement(tile, row, column))
+            }),
+            _ => false,
         }
     }
 
-    pub fn place_tile(&mut self, tile: &Tile, position: (usize, usize)) -> Result<(), ()> {
-        if !self.is_valid_placement(tile, position.0, position.1) { return Err(()); }
+    pub fn place_tile(
+        &mut self,
+        tile: &Tile,
+        position: BoardPosition,
+    ) -> Result<i32, InvalidActionError> {
+        if !self.is_valid_placement(tile, position.0, position.1) {
+            return Err(InvalidActionError::new(format!(
+                "{:?} cannot be placed on position {:?}",
+                tile, position
+            )));
+        }
 
-        self.tiles[position.0][position.1] = tile.clone();
+        self.tiles[position.0][position.1] = *tile;
         if Self::is_owned_tile(tile) {
             self.can_place_greenery_adjacent_to_owned_tiles = true
         }
-        if *tile == Ocean {
-            self.placed_oceans += 1
+
+        match *tile {
+            Ocean => self.placed_oceans += 1,
+            City => {
+                return Ok(Self::neighbour_positions_of(position.0, position.1)
+                    .into_iter()
+                    .filter(|position| self.tiles[position.0][position.1] == Greenery)
+                    .count() as i32)
+            }
+            Greenery => {
+                return Ok(1 + Self::neighbour_positions_of(position.0, position.1)
+                    .into_iter()
+                    .filter(|position| self.tiles[position.0][position.1] == City)
+                    .count() as i32)
+            }
+            _ => (),
         }
 
-        Ok(())
+        Ok(0)
     }
 
     pub fn placed_oceans(&self) -> usize {
@@ -80,33 +106,34 @@ impl Board {
 
         match tile {
             City => !self.city_exists_around(row, column),
-            Greenery => !self.can_place_greenery_adjacent_to_owned_tiles ||
-                self.has_owned_tiles_around(row, column),
-            _ => false
+            Greenery => {
+                !self.can_place_greenery_adjacent_to_owned_tiles
+                    || self.has_owned_tiles_around(row, column)
+            }
+            _ => false,
         }
     }
 
     fn city_exists_around(&self, row: usize, column: usize) -> bool {
-        Self::neighbour_positions_of(row, column).iter()
+        Self::neighbour_positions_of(row, column)
+            .iter()
             .any(|(row, column)| self.tiles[*row][*column] == City)
     }
 
     fn has_owned_tiles_around(&self, row: usize, column: usize) -> bool {
-        Self::neighbour_positions_of(row, column).iter()
+        Self::neighbour_positions_of(row, column)
+            .iter()
             .any(|(row, column)| Self::is_owned_tile(&self.tiles[*row][*column]))
     }
 
     fn is_owned_tile(tile: &Tile) -> bool {
-        match tile {
-            Greenery | City => true,
-            _ => false
-        }
+        matches!(tile, Greenery | City)
     }
 
     fn neighbour_positions_of(row: usize, column: usize) -> Vec<(usize, usize)> {
         let mut neighbours = Vec::with_capacity(6);
 
-        if row >= 1 && row <= 4 && column < row + 4 {
+        if (1..=4).contains(&row) && column < row + 4 {
             neighbours.push((row - 1, column));
         }
         if row >= 5 {
@@ -127,7 +154,7 @@ impl Board {
         if row <= 3 {
             neighbours.push((row + 1, column));
         }
-        if row >= 4 && row <= 7 && column > 0 {
+        if (4..=7).contains(&row) && column > 0 {
             neighbours.push((row + 1, column - 1));
         }
 
@@ -135,7 +162,7 @@ impl Board {
             neighbours.push((row, column - 1));
         }
 
-        if row >= 1 && row <= 4 && column > 0 {
+        if (1..=4).contains(&row) && column > 0 {
             neighbours.push((row - 1, column - 1));
         }
         if row >= 5 {
@@ -146,7 +173,7 @@ impl Board {
     }
 
     fn is_invalid_position(row: usize, column: usize) -> bool {
-        return row > 8 || row <= 4 && column > row + 4 || row > 4 && column > 12 - row;
+        row > 8 || row <= 4 && column > row + 4 || row > 4 && column > 12 - row
     }
 }
 
@@ -157,8 +184,12 @@ impl Display for Board {
             for _ in 0..indent {
                 write!(f, " ")?;
             }
-            for tile in row_tiles {
-                write!(f, "{} ", *tile)?;
+            for (column, tile) in row_tiles.iter().enumerate() {
+                if *tile == Empty && self.game_map.is_ocean_position((row, column)) {
+                    write!(f, "_ ")?;
+                } else {
+                    write!(f, "{} ", *tile)?;
+                }
             }
             writeln!(f)?;
         }
@@ -171,54 +202,61 @@ mod tests {
     use std::collections::HashSet;
 
     use lazy_static::lazy_static;
+
     use crate::THARSIS;
 
     use super::*;
 
-    lazy_static!{
+    lazy_static! {
         static ref EMPTY_THARSIS_BOARD: Board = Board::new(&THARSIS);
         static ref BOARD_POSITIONS: HashSet<(usize, usize)> = {
             let mut board_positions = HashSet::new();
-            EMPTY_THARSIS_BOARD.tiles.iter().enumerate()
-                .for_each(|(row, row_tiles) | row_tiles.iter().enumerate()
-                .for_each(|(column, _)| {
-                    board_positions.insert((row, column));
-                })
-            );
+            EMPTY_THARSIS_BOARD
+                .tiles
+                .iter()
+                .enumerate()
+                .for_each(|(row, row_tiles)| {
+                    row_tiles.iter().enumerate().for_each(|(column, _)| {
+                        board_positions.insert((row, column));
+                    })
+                });
             board_positions
         };
     }
 
     #[test]
     fn test_can_place_oceans() {
-        BOARD_POSITIONS.iter()
-            .for_each(|position| {
-                assert_eq!(THARSIS.is_ocean_position(*position),
-                           EMPTY_THARSIS_BOARD.is_valid_placement(&Ocean, position.0, position.1),
-                           "Ocean placement test on position ({}, {}) failed.", position.0, position.1);
-            })
+        BOARD_POSITIONS.iter().for_each(|position| {
+            assert_eq!(
+                THARSIS.is_ocean_position(*position),
+                EMPTY_THARSIS_BOARD.is_valid_placement(&Ocean, position.0, position.1),
+                "Ocean placement test on position ({}, {}) failed.",
+                position.0,
+                position.1
+            );
+        })
     }
 
     #[test]
     fn test_city_placements() {
         let mut board = Board::new(&THARSIS);
-        assert_eq!(Ok(()), board.place_tile(&City, (0, 0)));
-        assert_eq!(Err(()), board.place_tile(&City, (1, 0)));
-        assert_eq!(Err(()), board.place_tile(&City, (1, 1)));
+        assert!(board.place_tile(&City, (0, 0)).is_ok());
+        assert!(board.place_tile(&City, (1, 0)).is_err());
+        assert!(board.place_tile(&City, (1, 1)).is_err());
 
-        assert_eq!(Ok(()), board.place_tile(&City, (2, 1)));
+        assert!(board.place_tile(&City, (2, 1)).is_ok());
 
-        assert_eq!(Ok(()), board.place_tile(&City, (4, 0)));
-        assert_eq!(Ok(()), board.place_tile(&City, (5, 1)));
+        assert!(board.place_tile(&City, (4, 0)).is_ok());
+        assert!(board.place_tile(&City, (5, 1)).is_ok());
     }
 
     #[test]
     fn test_greenery_placements() {
         let mut board = Board::new(&THARSIS);
-        assert_eq!(Ok(()), board.place_tile(&City, (4, 0)));
-        assert_eq!(Err(()), board.place_tile(&Greenery, (4, 2)));
-        assert_eq!(Ok(()), board.place_tile(&Greenery, (3, 0)));
-        assert_eq!(Ok(()), board.place_tile(&Greenery, (4, 1)));
-        assert_eq!(Ok(()), board.place_tile(&Greenery, (5, 0)));
+        assert!(board.place_tile(&City, (4, 0)).is_ok());
+        assert!(board.place_tile(&Greenery, (4, 2)).is_err());
+        assert!(board.place_tile(&Greenery, (3, 0)).is_ok());
+        assert!(board.place_tile(&Greenery, (4, 1)).is_ok());
+        assert!(board.place_tile(&Greenery, (5, 0)).is_ok());
     }
 }

@@ -1,33 +1,52 @@
 mod card_builder;
 pub(crate) mod card_compendium;
 
-use crate::model::game_data::GameData;
-use crate::model::game_data::mutation::normal_mutation::NormalMutation;
-use crate::model::game_data::mutation::normal_mutation::NormalMutation::CompositeMutation;
-use crate::model::game_data::requirement::{Requirement};
+use crate::model::game::mutation::Mutation;
+use crate::model::game::mutation::Mutation::Composite;
+use crate::model::game::requirement::Requirement;
+use crate::model::game::Game;
+use crate::model::invalid_action_error::{ActionResult, InvalidActionError};
+use std::fmt::{Display, Formatter};
 
 pub type CardId = usize;
 
 pub struct Card {
-    mutation: NormalMutation,
+    mutation: Mutation,
     requirement: Option<Requirement>,
 }
 
 impl Card {
-    pub fn new(id: CardId, mut immediate_effects: Vec<NormalMutation>, requirement: Option<Requirement>) -> Self {
-        immediate_effects.insert(0, NormalMutation::CardPlayMutation(id));
+    pub fn new(
+        id: CardId,
+        mut immediate_effects: Vec<Mutation>,
+        requirement: Option<Requirement>,
+    ) -> Self {
+        immediate_effects.insert(0, Mutation::CardPlay(id));
         Self {
-            mutation: CompositeMutation(immediate_effects),
+            mutation: Composite(immediate_effects),
             requirement,
         }
     }
 
-    pub fn play(&self, game_data: &mut GameData) -> Result<(), ()> {
+    pub fn play(&self, game: &mut Game) -> ActionResult {
         if let Some(requirement) = &self.requirement {
-            if !requirement.is_fulfilled(game_data) {
-                return Err(());
+            if !requirement.is_fulfilled(game) {
+                return Err(InvalidActionError::new(format!(
+                    "Requirement not fulfilled: {}",
+                    requirement
+                )));
             }
         }
-        self.mutation.apply(game_data)
+        self.mutation.apply(game)
+    }
+}
+
+impl Display for Card {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.mutation)?;
+        if let Some(ref requirement) = self.requirement {
+            writeln!(f, "Requirement: {}", requirement)?;
+        }
+        Ok(())
     }
 }

@@ -5,5 +5,5 @@ pub enum Resource {
     Titanium,
     Plant,
     Energy,
-    Heat
+    Heat,
 }

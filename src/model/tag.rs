@@ -1,4 +1,6 @@
-#[derive(Clone, Eq, PartialEq, Hash)]
+use std::fmt::{Display, Formatter};
+
+#[derive(Clone, Eq, PartialEq, Hash, Debug, Copy)]
 pub enum Tag {
     Builder,
     Space,
@@ -9,4 +11,10 @@ pub enum Tag {
     Power,
     Science,
     City,
+}
+
+impl Display for Tag {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
