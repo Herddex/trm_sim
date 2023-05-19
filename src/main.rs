@@ -38,8 +38,6 @@ fn main() {
     println!("{}", game);
 
     loop {
-        print!(">>>");
-
         user_input.clear();
         if let Err(error) = io::stdin().read_line(&mut user_input) {
             println!("Error: {}", error);

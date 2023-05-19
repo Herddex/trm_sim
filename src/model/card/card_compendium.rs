@@ -492,7 +492,8 @@ fn build_card_compendium() -> HashMap<CardId, Card> {
             space_event()
                 .cost(7)
                 .tags(vec![Earth])
-                .mutation(Production(Heat, 2)),
+                .mutation(Production(Heat, 1))
+                .mutation(Resource(Heat, 3))
         ),
         (
             168,
