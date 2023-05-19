@@ -16,7 +16,6 @@ use crate::model::tag::Tag;
 
 pub(crate) mod board;
 pub(crate) mod mutation;
-pub(crate) mod requirement;
 
 const INITIAL_TR: i32 = 14;
 const INITIAL_TEMPERATURE: i32 = -30;

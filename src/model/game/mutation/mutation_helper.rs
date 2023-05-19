@@ -2,7 +2,7 @@ use crate::model::card::CardId;
 use crate::model::game::board::tile::Tile;
 use crate::model::game::board::BoardPosition;
 use crate::model::game::{Game, MAX_OXYGEN, MAX_TEMPERATURE};
-use crate::model::invalid_action_error::{ActionResult, InvalidActionError};
+use crate::action::invalid_action::{ActionResult, InvalidActionError};
 use crate::model::resource::Resource;
 use crate::model::resource::Resource::*;
 use std::cmp::min;

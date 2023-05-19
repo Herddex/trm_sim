@@ -3,9 +3,11 @@ use crate::model::card::CardId;
 use crate::model::game::board::tile::Tile;
 use crate::model::game::mutation::Mutation;
 use crate::model::game::Game;
-use crate::model::invalid_action_error::{ActionResult, InvalidActionError};
 use crate::model::resource::Resource;
 use lazy_static::lazy_static;
+use self::invalid_action::{ActionResult, InvalidActionError};
+
+pub mod invalid_action;
 
 lazy_static! {
     static ref HEAT_CONVERSION: Mutation = Mutation::Composite(vec![

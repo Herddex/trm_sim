@@ -9,7 +9,7 @@ use crate::model::game::board::tile::Tile::{Greenery, Ocean};
 use crate::model::game::mutation::Mutation::{
     CardDraw, OxygenIncrease, Production, Resource, TemperatureIncrease, TileQueuing, Tr,
 };
-use crate::model::game::requirement::Requirement;
+use crate::model::card::requirement::Requirement;
 use crate::model::resource::Resource::{Energy, Heat, MegaCredit, Plant, Steel, Titanium};
 use crate::model::tag::Tag;
 use crate::model::tag::Tag::{Builder, City, Earth, Jovian, Microbe, Power, Science, Space};

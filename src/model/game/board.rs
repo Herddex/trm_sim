@@ -4,7 +4,7 @@ use game_map::GameMap;
 use tile::Tile;
 use tile::Tile::*;
 
-use crate::model::invalid_action_error::InvalidActionError;
+use crate::action::invalid_action::InvalidActionError;
 
 pub(crate) mod game_map;
 pub(crate) mod tile;

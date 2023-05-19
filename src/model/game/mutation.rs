@@ -5,7 +5,7 @@ use std::fmt::{Display, Formatter};
 use crate::model::card::CardId;
 use crate::model::game::board::tile::Tile;
 use crate::model::game::Game;
-use crate::model::invalid_action_error::{ActionResult, InvalidActionError};
+use crate::action::invalid_action::{ActionResult, InvalidActionError};
 use crate::model::resource::Resource;
 use crate::model::resource::Resource::*;
 use crate::model::tag::Tag;

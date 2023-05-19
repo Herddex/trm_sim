@@ -1,11 +1,12 @@
 mod card_builder;
 pub(crate) mod card_compendium;
+pub(crate) mod requirement;
 
 use crate::model::game::mutation::Mutation;
 use crate::model::game::mutation::Mutation::Composite;
-use crate::model::game::requirement::Requirement;
+use crate::model::card::requirement::Requirement;
 use crate::model::game::Game;
-use crate::model::invalid_action_error::{ActionResult, InvalidActionError};
+use crate::action::invalid_action::{ActionResult, InvalidActionError};
 use std::fmt::{Display, Formatter};
 
 pub type CardId = usize;

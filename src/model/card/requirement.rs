@@ -15,14 +15,14 @@ pub enum Requirement {
 impl Requirement {
     pub fn is_fulfilled(&self, game: &Game) -> bool {
         match self {
-            Self::MinOxygen(amount) => game.oxygen >= *amount,
-            Self::MaxOxygen(amount) => game.oxygen <= *amount,
-            Self::MinTemperature(amount) => game.temperature >= *amount,
-            Self::MaxTemperature(amount) => game.temperature <= *amount,
-            Self::MinOcean(amount) => game.board.placed_oceans() >= *amount,
-            Self::MaxOcean(amount) => game.board.placed_oceans() <= *amount,
+            Self::MinOxygen(amount) => game.oxygen() >= *amount,
+            Self::MaxOxygen(amount) => game.oxygen() <= *amount,
+            Self::MinTemperature(amount) => game.temperature() >= *amount,
+            Self::MaxTemperature(amount) => game.temperature() <= *amount,
+            Self::MinOcean(amount) => game.board().placed_oceans() >= *amount,
+            Self::MaxOcean(amount) => game.board().placed_oceans() <= *amount,
             Self::Tag(tag, amount) => {
-                *game.tags.get(tag).expect("Tag should be in the map") >= *amount
+                game.tag(*tag) >= *amount
             }
         }
     }
