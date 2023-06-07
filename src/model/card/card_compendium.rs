@@ -3,13 +3,13 @@ use std::collections::HashMap;
 use lazy_static::lazy_static;
 
 use crate::model::card::card_builder::CardBuilder;
+use crate::model::card::requirement::Requirement;
 use crate::model::card::{Card, CardId};
 use crate::model::game::board::tile::Tile;
 use crate::model::game::board::tile::Tile::{Greenery, Ocean};
 use crate::model::game::mutation::Mutation::{
     CardDraw, OxygenIncrease, Production, Resource, TemperatureIncrease, TileQueuing, Tr,
 };
-use crate::model::card::requirement::Requirement;
 use crate::model::resource::Resource::{Energy, Heat, MegaCredit, Plant, Steel, Titanium};
 use crate::model::tag::Tag;
 use crate::model::tag::Tag::{Builder, City, Earth, Jovian, Microbe, Power, Science, Space};
@@ -493,7 +493,7 @@ fn build_card_compendium() -> HashMap<CardId, Card> {
                 .cost(7)
                 .tags(vec![Earth])
                 .mutation(Production(Heat, 1))
-                .mutation(Resource(Heat, 3))
+                .mutation(Resource(Heat, 3)),
         ),
         (
             168,

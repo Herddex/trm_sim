@@ -1,3 +1,4 @@
+use self::invalid_action::{ActionResult, InvalidActionError};
 use crate::model::card::card_compendium::CARD_COMPENDIUM;
 use crate::model::card::CardId;
 use crate::model::game::board::tile::Tile;
@@ -5,7 +6,6 @@ use crate::model::game::mutation::Mutation;
 use crate::model::game::Game;
 use crate::model::resource::Resource;
 use lazy_static::lazy_static;
-use self::invalid_action::{ActionResult, InvalidActionError};
 
 pub mod invalid_action;
 
@@ -41,6 +41,7 @@ lazy_static! {
     ]);
 }
 
+#[derive(Debug)]
 pub enum Action {
     Card(CardId),
     StandardPowerPlant,
@@ -55,13 +56,13 @@ pub enum Action {
 }
 
 impl Action {
-    pub fn execute(self, game: &mut Game) -> ActionResult {
+    pub fn execute(&self, game: &mut Game) -> ActionResult {
         match self {
             Self::Card(card_id) => {
-                if let Some(card) = CARD_COMPENDIUM.get(&card_id) {
+                if let Some(card) = CARD_COMPENDIUM.get(card_id) {
                     card.play(game)
                 } else {
-                    InvalidActionError::new(format!("Card #{:0>3} does not exist", card_id))
+                    InvalidActionError::new(format!("Card #{:0>3} does not exist", *card_id))
                         .into_err()
                 }
             }
@@ -72,7 +73,7 @@ impl Action {
             Self::StandardCity => STANDARD_CITY.apply(game),
             Self::HeatConversion => HEAT_CONVERSION.apply(game),
             Self::PlantConversion => PLANT_CONVERSION.apply(game),
-            Self::TilePlacement(position) => Mutation::TilePlacement(position).apply(game),
+            Self::TilePlacement(position) => Mutation::TilePlacement(*position).apply(game),
             Self::Pass => Mutation::Pass.apply(game),
         }
     }

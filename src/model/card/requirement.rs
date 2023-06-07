@@ -21,9 +21,7 @@ impl Requirement {
             Self::MaxTemperature(amount) => game.temperature() <= *amount,
             Self::MinOcean(amount) => game.oceans() >= *amount,
             Self::MaxOcean(amount) => game.oceans() <= *amount,
-            Self::Tag(tag, amount) => {
-                game.tag(*tag) >= *amount
-            }
+            Self::Tag(tag, amount) => game.tag(*tag) >= *amount,
         }
     }
 }

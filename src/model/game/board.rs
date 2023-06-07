@@ -50,6 +50,9 @@ impl Board {
         }
     }
 
+    /**
+    Returns the victory points (not TR) earned from the tile placement if successful
+    */
     pub fn place_tile(
         &mut self,
         tile: &Tile,
@@ -68,12 +71,10 @@ impl Board {
         }
 
         Ok(match *tile {
-            City => {
-                Self::neighbour_positions_of(position.0, position.1)
-                    .into_iter()
-                    .filter(|position| self.tiles[position.0][position.1] == Greenery)
-                    .count() as i32
-            }
+            City => Self::neighbour_positions_of(position.0, position.1)
+                .into_iter()
+                .filter(|position| self.tiles[position.0][position.1] == Greenery)
+                .count() as i32,
             Greenery => {
                 1 + Self::neighbour_positions_of(position.0, position.1)
                     .into_iter()
@@ -120,45 +121,73 @@ impl Board {
     }
 
     fn neighbour_positions_of(row: usize, column: usize) -> Vec<(usize, usize)> {
-        let mut neighbours = Vec::with_capacity(6);
+        [
+            Self::top_right_neighbour(row, column),
+            Self::right_neighbour(row, column),
+            Self::bottom_right_neighbour(row, column),
+            Self::bottom_left_neighbour(row, column),
+            Self::left_neighbour(row, column),
+            Self::top_left_neighbour(row, column),
+        ]
+        .into_iter()
+        .flatten()
+        .collect()
+    }
 
-        if (1..=4).contains(&row) && column < row + 4 {
-            neighbours.push((row - 1, column));
-        }
+    fn top_left_neighbour(row: usize, column: usize) -> Option<(usize, usize)> {
         if row >= 5 {
-            neighbours.push((row - 1, column + 1));
+            Some((row - 1, column))
+        } else if row > 0 && column > 0 {
+            Some((row - 1, column - 1))
+        } else {
+            None
         }
+    }
 
-        if row <= 4 && column < row + 4 || row >= 5 && column < 12 - row {
-            neighbours.push((row, column + 1));
-        }
-
-        if row <= 3 {
-            neighbours.push((row + 1, column + 1));
-        }
-        if row >= 4 || row <= 7 && column < 12 - row {
-            neighbours.push((row + 1, column));
-        }
-
-        if row <= 3 {
-            neighbours.push((row + 1, column));
-        }
-        if (4..=7).contains(&row) && column > 0 {
-            neighbours.push((row + 1, column - 1));
-        }
-
+    fn left_neighbour(row: usize, column: usize) -> Option<(usize, usize)> {
         if column > 0 {
-            neighbours.push((row, column - 1));
+            Some((row, column - 1))
+        } else {
+            None
         }
+    }
 
-        if (1..=4).contains(&row) && column > 0 {
-            neighbours.push((row - 1, column - 1));
+    fn bottom_left_neighbour(row: usize, column: usize) -> Option<(usize, usize)> {
+        if row <= 3 {
+            Some((row + 1, column))
+        } else if row <= 7 && column > 0 {
+            Some((row + 1, column - 1))
+        } else {
+            None
         }
+    }
+
+    fn bottom_right_neighbour(row: usize, column: usize) -> Option<(usize, usize)> {
+        if row <= 3 {
+            Some((row + 1, column + 1))
+        } else if row <= 7 && column < 12 - row {
+            Some((row + 1, column))
+        } else {
+            None
+        }
+    }
+
+    fn right_neighbour(row: usize, column: usize) -> Option<(usize, usize)> {
+        if column < 8 - row.abs_diff(4) {
+            Some((row, column + 1))
+        } else {
+            None
+        }
+    }
+
+    fn top_right_neighbour(row: usize, column: usize) -> Option<(usize, usize)> {
         if row >= 5 {
-            neighbours.push((row - 1, column))
+            Some((row - 1, column + 1))
+        } else if row > 0 && column < row + 4 {
+            Some((row - 1, column))
+        } else {
+            None
         }
-
-        neighbours
     }
 
     fn is_invalid_position(row: usize, column: usize) -> bool {
@@ -247,5 +276,13 @@ mod tests {
         assert!(board.place_tile(&Greenery, (3, 0)).is_ok());
         assert!(board.place_tile(&Greenery, (4, 1)).is_ok());
         assert!(board.place_tile(&Greenery, (5, 0)).is_ok());
+    }
+
+    #[test]
+    fn test_invalid_neighbour_positions() {
+        assert!(!BOARD_POSITIONS
+            .iter()
+            .flat_map(|(row, column)| Board::neighbour_positions_of(*row, *column))
+            .any(|(row, column)| Board::is_invalid_position(row, column)));
     }
 }

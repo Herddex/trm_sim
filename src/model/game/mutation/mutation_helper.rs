@@ -1,8 +1,8 @@
+use crate::action::invalid_action::{ActionResult, InvalidActionError};
 use crate::model::card::CardId;
 use crate::model::game::board::tile::Tile;
 use crate::model::game::board::BoardPosition;
 use crate::model::game::{Game, MAX_OXYGEN, MAX_TEMPERATURE};
-use crate::action::invalid_action::{ActionResult, InvalidActionError};
 use crate::model::resource::Resource;
 use crate::model::resource::Resource::*;
 use std::cmp::min;
@@ -88,7 +88,8 @@ pub fn place_tile(game: &mut Game, position: BoardPosition) -> ActionResult {
         InvalidActionError::from("No tile to place").into_err()
     } else {
         let tile = *game.tile_stack.last().unwrap();
-        game.board.place_tile(&tile, position)?;
+        let earned_victory_points = game.board.place_tile(&tile, position)?;
+        game.victory_points += earned_victory_points;
         game.tile_stack.pop();
 
         match tile {
@@ -96,7 +97,7 @@ pub fn place_tile(game: &mut Game, position: BoardPosition) -> ActionResult {
             Tile::Ocean => {
                 game.oceans += 1;
                 increase_tr(game, 1)
-            },
+            }
             _ => (),
         }
 
@@ -109,7 +110,8 @@ pub fn place_tile(game: &mut Game, position: BoardPosition) -> ActionResult {
 }
 
 fn is_invalid_tile_queued_next(game: &Game) -> bool {
-    game.tile_stack.last()
+    game.tile_stack
+        .last()
         .filter(|tile| !game.can_place(tile))
         .is_some()
 }

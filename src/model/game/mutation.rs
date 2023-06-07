@@ -2,10 +2,10 @@ mod mutation_helper;
 
 use std::fmt::{Display, Formatter};
 
+use crate::action::invalid_action::{ActionResult, InvalidActionError};
 use crate::model::card::CardId;
 use crate::model::game::board::tile::Tile;
 use crate::model::game::Game;
-use crate::action::invalid_action::{ActionResult, InvalidActionError};
 use crate::model::resource::Resource;
 use crate::model::resource::Resource::*;
 use crate::model::tag::Tag;
@@ -335,7 +335,9 @@ mod tests {
 
     fn place_all_oceans(game: &mut Game) {
         for ocean_position in THARSIS.ocean_positions().iter().take(MAX_OCEANS as usize) {
-            assert!(game.apply(&Mutation::TilePlacement(*ocean_position)).is_ok());
+            assert!(game
+                .apply(&Mutation::TilePlacement(*ocean_position))
+                .is_ok());
         }
     }
 

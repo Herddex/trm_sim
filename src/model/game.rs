@@ -1,3 +1,4 @@
+use std::cmp::max;
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Display, Formatter};
 
@@ -25,6 +26,8 @@ const INITIAL_PRODUCTION: i32 = 1;
 const MAX_TEMPERATURE: i32 = 8;
 const MAX_OXYGEN: i32 = 14;
 const MAX_OCEANS: i32 = 9;
+
+const LAST_GENERATION: u32 = 14;
 
 #[derive(Clone)]
 pub struct Game {
@@ -86,10 +89,11 @@ impl Game {
                 (Tag::Space, 0),
                 (Tag::Earth, 0),
                 (Tag::Jovian, 0),
-                (Tag::Power, 0),
-                (Tag::Science, 0),
                 (Tag::Plant, 0),
                 (Tag::Microbe, 0),
+                (Tag::Power, 0),
+                (Tag::Science, 0),
+                (Tag::City, 0),
             ]),
 
             cards_in_hand: (0..10)
@@ -110,7 +114,7 @@ impl Game {
         self.board.can_place(tile) && (*tile != Tile::Ocean || self.oceans < MAX_OCEANS)
     }
     pub fn is_over(&self) -> bool {
-        self.generation > 14
+        self.generation > LAST_GENERATION
     }
     pub fn is_won(&self) -> bool {
         self.is_over()
@@ -148,7 +152,7 @@ impl Display for Game {
             writeln!(f, "{}", CARD_COMPENDIUM.get(card_id).unwrap())?;
         }
 
-        writeln!(f, "Generation: {}", self.generation)?;
+        writeln!(f, "Generation: {}", max(LAST_GENERATION, self.generation))?;
         writeln!(
             f,
             "Terraforming Rating: {}; Victory Points: {}",
@@ -156,13 +160,8 @@ impl Display for Game {
         )?;
         writeln!(
             f,
-            "Oxygen: {} / {}%; Temperature: {} / +{} C; Oceans: {} / {}",
-            self.oxygen,
-            MAX_OXYGEN,
-            self.temperature,
-            MAX_TEMPERATURE,
-            self.oceans,
-            MAX_OCEANS
+            "Oxygen: {} / {}%; Temperature: {:+} / {:+} C; Oceans: {} / {}",
+            self.oxygen, MAX_OXYGEN, self.temperature, MAX_TEMPERATURE, self.oceans, MAX_OCEANS
         )?;
         writeln!(f)?;
 
@@ -210,12 +209,22 @@ impl Display for Game {
 
         writeln!(f, "{}", self.board)?;
 
-        write!(f, "NEXT ACTION: ")?;
-        if self.tile_stack.is_empty() {
-            writeln!(f, "Regular")?;
+        if self.is_over() {
+            if self.is_won() {
+                writeln!(f, "You won with {} victory points!", self.victory_points)?;
+            } else {
+                writeln!(f, "You lost.")?;
+            }
         } else {
-            writeln!(f, "Place {:?}", self.tile_stack.last().unwrap())?;
+            write!(f, "NEXT ACTION: ")?;
+
+            if self.tile_stack.is_empty() {
+                writeln!(f, "Regular")?;
+            } else {
+                writeln!(f, "Place {:?}", self.tile_stack.last().unwrap())?;
+            }
         }
+
         Ok(())
     }
 }

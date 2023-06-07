@@ -1,6 +1,6 @@
+use crate::model::card::requirement::Requirement;
 use crate::model::card::{Card, CardId};
 use crate::model::game::mutation::Mutation;
-use crate::model::card::requirement::Requirement;
 use crate::model::resource::Resource;
 use crate::model::tag::Tag;
 use crate::model::tag::Tag::{Builder, Space};
