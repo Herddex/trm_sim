@@ -93,17 +93,25 @@ pub fn place_tile(game: &mut Game, position: BoardPosition) -> ActionResult {
 
         match tile {
             Tile::Greenery => increase_oxygen_if_not_maxed_out(game, 1),
-            Tile::Ocean => increase_tr(game, 1),
+            Tile::Ocean => {
+                game.oceans += 1;
+                increase_tr(game, 1)
+            },
             _ => (),
         }
 
-        let tile_stack = &mut game.tile_stack;
-        while !tile_stack.is_empty() && !game.board.can_place(tile_stack.last().unwrap()) {
-            tile_stack.pop();
+        while is_invalid_tile_queued_next(game) {
+            game.tile_stack.pop();
         }
 
         Ok(())
     }
+}
+
+fn is_invalid_tile_queued_next(game: &Game) -> bool {
+    game.tile_stack.last()
+        .filter(|tile| !game.can_place(tile))
+        .is_some()
 }
 
 pub fn production_change(game: &mut Game, resource: &Resource, delta: i32) -> ActionResult {

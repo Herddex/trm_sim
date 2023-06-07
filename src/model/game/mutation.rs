@@ -10,6 +10,7 @@ use crate::model::resource::Resource;
 use crate::model::resource::Resource::*;
 use crate::model::tag::Tag;
 
+#[derive(Clone)]
 pub enum Mutation {
     Composite(Vec<Mutation>),
     Production(Resource, i32),
@@ -72,7 +73,7 @@ impl Mutation {
             }
             Mutation::VictoryPoint(amount) => game.victory_points += amount,
             Mutation::TileQueuing(tile) => {
-                if game.board.can_place(tile) {
+                if game.can_place(tile) {
                     game.tile_stack.push(*tile);
                 }
             }
@@ -131,7 +132,7 @@ impl Display for Mutation {
 mod tests {
     use super::*;
     use crate::model::game::board::tile::Tile::Ocean;
-    use crate::model::game::board::MAX_OCEANS;
+    use crate::model::game::MAX_OCEANS;
     use crate::model::game::{
         INITIAL_MEGA_CREDITS, INITIAL_PRODUCTION, INITIAL_TR, MAX_OXYGEN, MAX_TEMPERATURE,
     };
@@ -324,12 +325,22 @@ mod tests {
 
     #[rstest]
     fn test_tile_queueing(mut game: Game) {
-        assert!(game.apply(&Mutation::TileQueuing(Ocean)).is_ok());
-        assert_eq!(game.tile_stack, vec![Ocean]);
-        for ocean_position in THARSIS.ocean_positions().iter().take(MAX_OCEANS) {
-            assert!(game.board.place_tile(&Ocean, *ocean_position).is_ok());
+        queue_oceans_until_maximum_is_surpassed(&mut game);
+        assert_eq!(game.tile_stack, vec![Ocean; MAX_OCEANS as usize + 1]);
+
+        place_all_oceans(&mut game);
+        assert_eq!(game.oceans, MAX_OCEANS);
+        assert_eq!(game.tile_stack, vec![]);
+    }
+
+    fn place_all_oceans(game: &mut Game) {
+        for ocean_position in THARSIS.ocean_positions().iter().take(MAX_OCEANS as usize) {
+            assert!(game.apply(&Mutation::TilePlacement(*ocean_position)).is_ok());
         }
-        assert_eq!(game.board.placed_oceans(), MAX_OCEANS);
-        assert_eq!(game.tile_stack, vec![Ocean]);
+    }
+
+    fn queue_oceans_until_maximum_is_surpassed(game: &mut Game) {
+        let ocean_queue = vec![Mutation::TileQueuing(Ocean); MAX_OCEANS as usize + 1];
+        assert!(game.apply(&Mutation::Composite(ocean_queue)).is_ok());
     }
 }

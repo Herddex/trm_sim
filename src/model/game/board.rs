@@ -9,13 +9,10 @@ use crate::action::invalid_action::InvalidActionError;
 pub(crate) mod game_map;
 pub(crate) mod tile;
 
-pub const MAX_OCEANS: usize = 9;
-
 pub type BoardPosition = (usize, usize);
 
 #[derive(Clone)]
 pub struct Board {
-    placed_oceans: usize,
     tiles: [Vec<Tile>; 9],
     game_map: &'static GameMap,
     can_place_greenery_adjacent_to_owned_tiles: bool,
@@ -24,7 +21,6 @@ pub struct Board {
 impl Board {
     pub fn new(map: &'static GameMap) -> Self {
         Self {
-            placed_oceans: 0,
             tiles: [
                 vec![Empty; 5],
                 vec![Empty; 6],
@@ -43,7 +39,7 @@ impl Board {
 
     pub fn can_place(&self, tile: &Tile) -> bool {
         match tile {
-            Ocean => self.placed_oceans < MAX_OCEANS,
+            Ocean => true,
             City | Greenery => self.tiles.iter().enumerate().any(|(row, tile_row)| {
                 tile_row
                     .iter()
@@ -71,28 +67,21 @@ impl Board {
             self.can_place_greenery_adjacent_to_owned_tiles = true
         }
 
-        match *tile {
-            Ocean => self.placed_oceans += 1,
+        Ok(match *tile {
             City => {
-                return Ok(Self::neighbour_positions_of(position.0, position.1)
+                Self::neighbour_positions_of(position.0, position.1)
                     .into_iter()
                     .filter(|position| self.tiles[position.0][position.1] == Greenery)
-                    .count() as i32)
+                    .count() as i32
             }
             Greenery => {
-                return Ok(1 + Self::neighbour_positions_of(position.0, position.1)
+                1 + Self::neighbour_positions_of(position.0, position.1)
                     .into_iter()
                     .filter(|position| self.tiles[position.0][position.1] == City)
-                    .count() as i32)
+                    .count() as i32
             }
-            _ => (),
-        }
-
-        Ok(0)
-    }
-
-    pub fn placed_oceans(&self) -> usize {
-        self.placed_oceans
+            _ => 0,
+        })
     }
 
     fn is_valid_placement(&self, tile: &Tile, row: usize, column: usize) -> bool {
@@ -101,7 +90,7 @@ impl Board {
         }
 
         if self.game_map.is_ocean_position((row, column)) {
-            return *tile == Ocean && self.placed_oceans < MAX_OCEANS;
+            return *tile == Ocean;
         }
 
         match tile {

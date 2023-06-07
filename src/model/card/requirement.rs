@@ -7,8 +7,8 @@ pub enum Requirement {
     MaxOxygen(i32),
     MinTemperature(i32),
     MaxTemperature(i32),
-    MinOcean(usize),
-    MaxOcean(usize),
+    MinOcean(i32),
+    MaxOcean(i32),
     Tag(Tag, i32),
 }
 
@@ -19,8 +19,8 @@ impl Requirement {
             Self::MaxOxygen(amount) => game.oxygen() <= *amount,
             Self::MinTemperature(amount) => game.temperature() >= *amount,
             Self::MaxTemperature(amount) => game.temperature() <= *amount,
-            Self::MinOcean(amount) => game.board().placed_oceans() >= *amount,
-            Self::MaxOcean(amount) => game.board().placed_oceans() <= *amount,
+            Self::MinOcean(amount) => game.oceans() >= *amount,
+            Self::MaxOcean(amount) => game.oceans() <= *amount,
             Self::Tag(tag, amount) => {
                 game.tag(*tag) >= *amount
             }

@@ -9,7 +9,6 @@ use crate::model::card::card_compendium::CARD_COMPENDIUM;
 use crate::model::card::CardId;
 use crate::model::game::board::game_map::GameMap;
 use crate::model::game::board::tile::Tile;
-use crate::model::game::board::MAX_OCEANS;
 use crate::model::resource::Resource;
 use crate::model::resource::Resource::{Energy, Heat, MegaCredit, Plant, Steel, Titanium};
 use crate::model::tag::Tag;
@@ -25,6 +24,7 @@ const INITIAL_PRODUCTION: i32 = 1;
 
 const MAX_TEMPERATURE: i32 = 8;
 const MAX_OXYGEN: i32 = 14;
+const MAX_OCEANS: i32 = 9;
 
 #[derive(Clone)]
 pub struct Game {
@@ -33,6 +33,7 @@ pub struct Game {
 
     oxygen: i32,
     temperature: i32,
+    oceans: i32,
 
     resources: HashMap<Resource, i32>,
     productions: HashMap<Resource, i32>,
@@ -62,6 +63,7 @@ impl Game {
             tr: INITIAL_TR,
             oxygen: INITIAL_OXYGEN,
             temperature: INITIAL_TEMPERATURE,
+            oceans: 0,
             resources: HashMap::from([
                 (MegaCredit, INITIAL_MEGA_CREDITS),
                 (Steel, 0),
@@ -104,32 +106,8 @@ impl Game {
             tile_stack: Vec::new(),
         }
     }
-    pub fn generation(&self) -> u32 {
-        self.generation
-    }
-    pub fn tr(&self) -> i32 {
-        self.tr
-    }
-    pub fn oxygen(&self) -> i32 {
-        self.oxygen
-    }
-    pub fn temperature(&self) -> i32 {
-        self.temperature
-    }
-    pub fn board(&self) -> &Board {
-        &self.board
-    }
-    pub fn cards_in_hand(&self) -> &HashSet<CardId> {
-        &self.cards_in_hand
-    }
-    pub fn played_cards(&self) -> &HashSet<CardId> {
-        &self.played_cards
-    }
-    pub fn victory_points(&self) -> i32 {
-        self.victory_points
-    }
-    pub fn tile_stack(&self) -> &Vec<Tile> {
-        &self.tile_stack
+    pub fn can_place(&self, tile: &Tile) -> bool {
+        self.board.can_place(tile) && (*tile != Tile::Ocean || self.oceans < MAX_OCEANS)
     }
     pub fn is_over(&self) -> bool {
         self.generation > 14
@@ -138,7 +116,7 @@ impl Game {
         self.is_over()
             && self.oxygen == MAX_OXYGEN
             && self.temperature == MAX_TEMPERATURE
-            && self.board.placed_oceans() == MAX_OCEANS
+            && self.oceans == MAX_OCEANS
     }
     pub fn resource(&self, resource: &Resource) -> i32 {
         *self.resources.get(resource).unwrap()
@@ -151,6 +129,15 @@ impl Game {
     }
     fn resource_mut(&mut self, resource: &Resource) -> &mut i32 {
         self.resources.get_mut(resource).unwrap()
+    }
+    pub fn oxygen(&self) -> i32 {
+        self.oxygen
+    }
+    pub fn temperature(&self) -> i32 {
+        self.temperature
+    }
+    pub fn oceans(&self) -> i32 {
+        self.oceans
     }
 }
 
@@ -174,7 +161,7 @@ impl Display for Game {
             MAX_OXYGEN,
             self.temperature,
             MAX_TEMPERATURE,
-            self.board.placed_oceans(),
+            self.oceans,
             MAX_OCEANS
         )?;
         writeln!(f)?;
