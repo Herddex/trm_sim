@@ -4,12 +4,11 @@ use game_map::GameMap;
 use tile::Tile;
 use tile::Tile::*;
 
-use crate::action::invalid_action::InvalidActionError;
-
 pub(crate) mod game_map;
 pub(crate) mod tile;
 
 pub type BoardPosition = (usize, usize);
+type VictoryPoints = i32;
 
 #[derive(Clone)]
 pub struct Board {
@@ -37,77 +36,109 @@ impl Board {
         }
     }
 
-    pub fn can_place(&self, tile: &Tile) -> bool {
+    pub fn tiles(&self) -> &[Vec<Tile>; 9] {
+        &self.tiles
+    }
+
+    pub fn place_tile(&mut self, tile: Tile) -> i32 {
         match tile {
-            Ocean => true,
-            City | Greenery => self.tiles.iter().enumerate().any(|(row, tile_row)| {
-                tile_row
-                    .iter()
-                    .enumerate()
-                    .any(|(column, _)| self.is_valid_placement(tile, row, column))
-            }),
-            _ => false,
+            Ocean => {
+                self.place_ocean_greedily();
+                0
+            }
+            Greenery => self.place_greenery_greedily(),
+            City => self.place_city_greedily(),
+            Empty => 0,
         }
     }
 
     /**
-    Returns the victory points (not TR) earned from the tile placement if successful
+    Invariant: The maximum number of oceans has not yet been reached
     */
-    pub fn place_tile(
-        &mut self,
-        tile: &Tile,
-        position: BoardPosition,
-    ) -> Result<i32, InvalidActionError> {
-        if !self.is_valid_placement(tile, position.0, position.1) {
-            return Err(InvalidActionError::new(format!(
-                "{:?} cannot be placed on position {:?}",
-                tile, position
-            )));
-        }
-
-        self.tiles[position.0][position.1] = *tile;
-        if Self::is_owned_tile(tile) {
-            self.can_place_greenery_adjacent_to_owned_tiles = true
-        }
-
-        Ok(match *tile {
-            City => Self::neighbour_positions_of(position.0, position.1)
-                .into_iter()
-                .filter(|position| self.tiles[position.0][position.1] == Greenery)
-                .count() as i32,
-            Greenery => {
-                1 + Self::neighbour_positions_of(position.0, position.1)
-                    .into_iter()
-                    .filter(|position| self.tiles[position.0][position.1] == City)
-                    .count() as i32
-            }
-            _ => 0,
-        })
-    }
-
-    fn is_valid_placement(&self, tile: &Tile, row: usize, column: usize) -> bool {
-        if Self::is_invalid_position(row, column) || self.tiles[row][column] != Empty {
-            return false;
-        }
-
-        if self.game_map.is_ocean_position((row, column)) {
-            return *tile == Ocean;
-        }
-
-        match tile {
-            City => !self.city_exists_around(row, column),
-            Greenery => {
-                !self.can_place_greenery_adjacent_to_owned_tiles
-                    || self.has_owned_tiles_around(row, column)
-            }
-            _ => false,
-        }
-    }
-
-    fn city_exists_around(&self, row: usize, column: usize) -> bool {
-        Self::neighbour_positions_of(row, column)
+    fn place_ocean_greedily(&mut self) {
+        let (i, j) = self
+            .game_map
+            .ocean_positions()
             .iter()
-            .any(|(row, column)| self.tiles[*row][*column] == City)
+            .find(|(i, j)| self.tiles[*i][*j] == Empty)
+            .expect("There should be at least one empty ocean position");
+        self.tiles[*i][*j] = Ocean;
+    }
+
+    fn place_greenery_greedily(&mut self) -> VictoryPoints {
+        let mut legal_positions = Vec::new();
+        for (i, row) in self.tiles.iter().enumerate() {
+            legal_positions.extend(
+                row.iter()
+                    .enumerate()
+                    .filter(|(j, _)| self.can_place_greenery_at((i, *j)))
+                    .map(|(j, _)| (i, j)),
+            );
+        }
+
+        legal_positions.sort_by(|x, y| {
+            self.neighbours_of(*x, City)
+                .cmp(&self.neighbours_of(*y, City))
+        });
+
+        match legal_positions.last() {
+            None => 0,
+            Some((i, j)) => {
+                self.tiles[*i][*j] = Greenery;
+                self.can_place_greenery_adjacent_to_owned_tiles = true;
+                self.neighbours_of((*i, *j), City) as i32 + 1
+            }
+        }
+    }
+
+    fn can_place_greenery_at(&self, position: (usize, usize)) -> bool {
+        self.can_place_non_ocean_tile_at(position)
+            && (!self.can_place_greenery_adjacent_to_owned_tiles
+                || self.has_owned_tiles_around(position.0, position.1))
+    }
+
+    /**
+    Returns the victory points (not TR) earned from the tile placement
+     */
+    fn place_city_greedily(&mut self) -> i32 {
+        let mut legal_positions = Vec::new();
+        for (i, row) in self.tiles.iter().enumerate() {
+            for (j, _) in row.iter().enumerate() {
+                if self.can_place_city_at((i, j)) {
+                    legal_positions.push((i, j));
+                }
+            }
+        }
+
+        legal_positions.sort_by(|x, y| {
+            self.neighbours_of(*x, Greenery)
+                .cmp(&self.neighbours_of(*y, Greenery))
+        });
+
+        match legal_positions.last() {
+            None => 0,
+            Some((i, j)) => {
+                self.tiles[*i][*j] = City;
+                self.can_place_greenery_adjacent_to_owned_tiles = true;
+                self.neighbours_of((*i, *j), Greenery) as i32
+            }
+        }
+    }
+
+    fn can_place_city_at(&self, position: (usize, usize)) -> bool {
+        self.can_place_non_ocean_tile_at(position) && self.neighbours_of(position, City) == 0
+    }
+
+    fn can_place_non_ocean_tile_at(&self, position: (usize, usize)) -> bool {
+        self.tiles[position.0][position.1] == Empty
+            && !self.game_map.ocean_positions().contains(&position)
+    }
+
+    fn neighbours_of(&self, position: (usize, usize), tile_type: Tile) -> usize {
+        Self::neighbour_positions_of(position.0, position.1)
+            .into_iter()
+            .filter(|position| self.tiles[position.0][position.1] == tile_type)
+            .count()
     }
 
     fn has_owned_tiles_around(&self, row: usize, column: usize) -> bool {
@@ -189,10 +220,6 @@ impl Board {
             None
         }
     }
-
-    fn is_invalid_position(row: usize, column: usize) -> bool {
-        row > 8 || row <= 4 && column > row + 4 || row > 4 && column > 12 - row
-    }
 }
 
 impl Display for Board {
@@ -240,49 +267,5 @@ mod tests {
                 });
             board_positions
         };
-    }
-
-    #[test]
-    fn test_can_place_oceans() {
-        BOARD_POSITIONS.iter().for_each(|position| {
-            assert_eq!(
-                THARSIS.is_ocean_position(*position),
-                EMPTY_THARSIS_BOARD.is_valid_placement(&Ocean, position.0, position.1),
-                "Ocean placement test on position ({}, {}) failed.",
-                position.0,
-                position.1
-            );
-        })
-    }
-
-    #[test]
-    fn test_city_placements() {
-        let mut board = Board::new(&THARSIS);
-        assert!(board.place_tile(&City, (0, 0)).is_ok());
-        assert!(board.place_tile(&City, (1, 0)).is_err());
-        assert!(board.place_tile(&City, (1, 1)).is_err());
-
-        assert!(board.place_tile(&City, (2, 1)).is_ok());
-
-        assert!(board.place_tile(&City, (4, 0)).is_ok());
-        assert!(board.place_tile(&City, (5, 1)).is_ok());
-    }
-
-    #[test]
-    fn test_greenery_placements() {
-        let mut board = Board::new(&THARSIS);
-        assert!(board.place_tile(&City, (4, 0)).is_ok());
-        assert!(board.place_tile(&Greenery, (4, 2)).is_err());
-        assert!(board.place_tile(&Greenery, (3, 0)).is_ok());
-        assert!(board.place_tile(&Greenery, (4, 1)).is_ok());
-        assert!(board.place_tile(&Greenery, (5, 0)).is_ok());
-    }
-
-    #[test]
-    fn test_invalid_neighbour_positions() {
-        assert!(!BOARD_POSITIONS
-            .iter()
-            .flat_map(|(row, column)| Board::neighbour_positions_of(*row, *column))
-            .any(|(row, column)| Board::is_invalid_position(row, column)));
     }
 }

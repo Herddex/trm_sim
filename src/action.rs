@@ -16,20 +16,20 @@ lazy_static! {
     ]);
     static ref PLANT_CONVERSION: Mutation = Mutation::Composite(vec![
         Mutation::Resource(Resource::Plant, -8),
-        Mutation::TileQueuing(Tile::Greenery)
+        Mutation::TilePlacing(Tile::Greenery)
     ]);
     static ref STANDARD_CITY: Mutation = Mutation::Composite(vec![
         Mutation::Resource(Resource::MegaCredit, -25),
-        Mutation::TileQueuing(Tile::City),
+        Mutation::TilePlacing(Tile::City),
         Mutation::Production(Resource::MegaCredit, 1)
     ]);
     static ref STANDARD_GREENERY: Mutation = Mutation::Composite(vec![
         Mutation::Resource(Resource::MegaCredit, -23),
-        Mutation::TileQueuing(Tile::Greenery)
+        Mutation::TilePlacing(Tile::Greenery)
     ]);
     static ref STANDARD_AQUIFER: Mutation = Mutation::Composite(vec![
         Mutation::Resource(Resource::MegaCredit, -18),
-        Mutation::TileQueuing(Tile::Ocean),
+        Mutation::TilePlacing(Tile::Ocean),
     ]);
     static ref STANDARD_ASTEROID: Mutation = Mutation::Composite(vec![
         Mutation::Resource(Resource::MegaCredit, -14),
@@ -41,7 +41,7 @@ lazy_static! {
     ]);
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum Action {
     Card(CardId),
     StandardPowerPlant,
@@ -51,7 +51,6 @@ pub enum Action {
     StandardCity,
     HeatConversion,
     PlantConversion,
-    TilePlacement((usize, usize)),
     Pass,
 }
 
@@ -73,7 +72,6 @@ impl Action {
             Self::StandardCity => STANDARD_CITY.apply(game),
             Self::HeatConversion => HEAT_CONVERSION.apply(game),
             Self::PlantConversion => PLANT_CONVERSION.apply(game),
-            Self::TilePlacement(position) => Mutation::TilePlacement(*position).apply(game),
             Self::Pass => Mutation::Pass.apply(game),
         }
     }

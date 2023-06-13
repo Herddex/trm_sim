@@ -21,8 +21,7 @@ pub enum Mutation {
     TemperatureIncrease(u32),
     OxygenIncrease(u32),
     VictoryPoint(i32),
-    TileQueuing(Tile),
-    TilePlacement((usize, usize)),
+    TilePlacing(Tile),
     Tag(Tag),
     CardDraw(i32),
     CardPlay(CardId),
@@ -38,13 +37,9 @@ impl Mutation {
             return InvalidActionError::from("Game is over").into_err();
         }
 
-        if !game.tile_stack.is_empty() && !matches!(self, Self::TilePlacement(_)) {
-            return InvalidActionError::from("Tile placement expected.").into_err();
-        }
-
         let game_clone = game.clone();
         let result = self.unsafe_apply(game);
-        if matches!(result, Err(_)) {
+        if result.is_err() {
             *game = game_clone;
         }
 
@@ -72,11 +67,7 @@ impl Mutation {
                 mutation_helper::increase_oxygen_if_not_maxed_out(game, *amount)
             }
             Mutation::VictoryPoint(amount) => game.victory_points += amount,
-            Mutation::TileQueuing(tile) => {
-                if game.can_place(tile) {
-                    game.tile_stack.push(*tile);
-                }
-            }
+            Mutation::TilePlacing(tile) => mutation_helper::place_tile_greedily(game, tile),
             Mutation::Tag(tag) => *game.tags.get_mut(tag).expect("Tag should be in the map") += 1,
             Mutation::CardDraw(amount) => mutation_helper::draw_cards(game, *amount),
             Mutation::CardPlay(card_id) => mutation_helper::play_card(game, *card_id)?,
@@ -87,7 +78,6 @@ impl Mutation {
                 mutation_helper::mixed_payment(game, *cost, Titanium, TITANIUM_VALUE)?
             }
             Mutation::Pass => mutation_helper::pass(game),
-            Mutation::TilePlacement(position) => mutation_helper::place_tile(game, *position)?,
         }
         Ok(())
     }
@@ -115,10 +105,7 @@ impl Display for Mutation {
             }
             Mutation::OxygenIncrease(amount) => write!(f, "Increase oxygen {} step(s)", amount)?,
             Mutation::VictoryPoint(amount) => write!(f, "{} victory point(s)", amount)?,
-            Mutation::TileQueuing(tile) => write!(f, "Place tile: {:?}", tile)?,
-            Mutation::TilePlacement(position) => {
-                write!(f, "Place tile on row {}, column {}", position.0, position.1)?
-            }
+            Mutation::TilePlacing(tile) => write!(f, "Place tile: {:?}", tile)?,
             Mutation::Tag(tag) => write!(f, "{:?} Tag", tag)?,
             Mutation::CardDraw(amount) => write!(f, "Draw {} cards", amount)?,
             Mutation::CardPlay(card_id) => write!(f, "Card #{}", *card_id)?,
@@ -131,8 +118,6 @@ impl Display for Mutation {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::model::game::board::tile::Tile::Ocean;
-    use crate::model::game::MAX_OCEANS;
     use crate::model::game::{
         INITIAL_MEGA_CREDITS, INITIAL_PRODUCTION, INITIAL_TR, MAX_OXYGEN, MAX_TEMPERATURE,
     };
@@ -321,28 +306,5 @@ mod tests {
 
         assert_eq!(*game.resource_mut(&Energy), 3);
         assert_eq!(*game.resource_mut(&Heat), 3);
-    }
-
-    #[rstest]
-    fn test_tile_queueing(mut game: Game) {
-        queue_oceans_until_maximum_is_surpassed(&mut game);
-        assert_eq!(game.tile_stack, vec![Ocean; MAX_OCEANS as usize + 1]);
-
-        place_all_oceans(&mut game);
-        assert_eq!(game.oceans, MAX_OCEANS);
-        assert_eq!(game.tile_stack, vec![]);
-    }
-
-    fn place_all_oceans(game: &mut Game) {
-        for ocean_position in THARSIS.ocean_positions().iter().take(MAX_OCEANS as usize) {
-            assert!(game
-                .apply(&Mutation::TilePlacement(*ocean_position))
-                .is_ok());
-        }
-    }
-
-    fn queue_oceans_until_maximum_is_surpassed(game: &mut Game) {
-        let ocean_queue = vec![Mutation::TileQueuing(Ocean); MAX_OCEANS as usize + 1];
-        assert!(game.apply(&Mutation::Composite(ocean_queue)).is_ok());
     }
 }

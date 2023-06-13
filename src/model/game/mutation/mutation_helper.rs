@@ -1,8 +1,7 @@
 use crate::action::invalid_action::{ActionResult, InvalidActionError};
 use crate::model::card::CardId;
 use crate::model::game::board::tile::Tile;
-use crate::model::game::board::BoardPosition;
-use crate::model::game::{Game, MAX_OXYGEN, MAX_TEMPERATURE};
+use crate::model::game::{Game, MAX_OCEANS, MAX_OXYGEN, MAX_TEMPERATURE};
 use crate::model::resource::Resource;
 use crate::model::resource::Resource::*;
 use std::cmp::min;
@@ -83,37 +82,22 @@ pub fn pass(game: &mut Game) {
     draw_cards(game, 4);
 }
 
-pub fn place_tile(game: &mut Game, position: BoardPosition) -> ActionResult {
-    if game.tile_stack.is_empty() {
-        InvalidActionError::from("No tile to place").into_err()
-    } else {
-        let tile = *game.tile_stack.last().unwrap();
-        let earned_victory_points = game.board.place_tile(&tile, position)?;
-        game.victory_points += earned_victory_points;
-        game.tile_stack.pop();
-
-        match tile {
-            Tile::Greenery => increase_oxygen_if_not_maxed_out(game, 1),
-            Tile::Ocean => {
-                game.oceans += 1;
-                increase_tr(game, 1)
-            }
-            _ => (),
-        }
-
-        while is_invalid_tile_queued_next(game) {
-            game.tile_stack.pop();
-        }
-
-        Ok(())
+pub fn place_tile_greedily(game: &mut Game, tile: &Tile) {
+    if *tile == Tile::Ocean && game.oceans == MAX_OCEANS {
+        return;
     }
-}
 
-fn is_invalid_tile_queued_next(game: &Game) -> bool {
-    game.tile_stack
-        .last()
-        .filter(|tile| !game.can_place(tile))
-        .is_some()
+    let earned_victory_points = game.board.place_tile(*tile);
+    game.victory_points += earned_victory_points;
+
+    match tile {
+        Tile::Greenery => increase_oxygen_if_not_maxed_out(game, 1),
+        Tile::Ocean => {
+            game.oceans += 1;
+            increase_tr(game, 1)
+        }
+        _ => (),
+    }
 }
 
 pub fn production_change(game: &mut Game, resource: &Resource, delta: i32) -> ActionResult {

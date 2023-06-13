@@ -1,13 +1,6 @@
 use std::io;
 use trm_sim::*;
 
-fn parse_tile_position_input(possible_tile_position_input: &str) -> Option<Action> {
-    let mut split = possible_tile_position_input.split_whitespace();
-    let row = split.next()?.parse::<usize>().ok()?;
-    let column = split.next()?.parse::<usize>().ok()?;
-    Some(Action::TilePlacement((row, column)))
-}
-
 fn map_user_input(input: &str) -> Result<Action, std::fmt::Error> {
     if let Ok(card_id) = input.parse::<CardId>() {
         return Ok(Action::Card(card_id));
@@ -22,13 +15,7 @@ fn map_user_input(input: &str) -> Result<Action, std::fmt::Error> {
         "so" => Ok(Action::StandardAquifer),
         "se" => Ok(Action::StandardPowerPlant),
         "pass" => Ok(Action::Pass),
-        value => {
-            if let Some(tile_placement) = parse_tile_position_input(value) {
-                Ok(tile_placement)
-            } else {
-                Err(std::fmt::Error::default())
-            }
-        }
+        _ => Err(std::fmt::Error::default()),
     }
 }
 

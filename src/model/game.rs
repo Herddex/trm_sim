@@ -1,4 +1,4 @@
-use std::cmp::max;
+use std::cmp;
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Display, Formatter};
 
@@ -27,11 +27,11 @@ const MAX_TEMPERATURE: i32 = 8;
 const MAX_OXYGEN: i32 = 14;
 const MAX_OCEANS: i32 = 9;
 
-const LAST_GENERATION: u32 = 14;
+const LAST_GENERATION: i32 = 14;
 
 #[derive(Clone)]
 pub struct Game {
-    generation: u32,
+    generation: i32,
     tr: i32,
 
     oxygen: i32,
@@ -50,8 +50,6 @@ pub struct Game {
     cards_to_be_drawn: Vec<CardId>,
 
     victory_points: i32,
-
-    tile_stack: Vec<Tile>,
 }
 
 impl Game {
@@ -107,11 +105,7 @@ impl Game {
             cards_to_be_drawn,
 
             victory_points: INITIAL_TR,
-            tile_stack: Vec::new(),
         }
-    }
-    pub fn can_place(&self, tile: &Tile) -> bool {
-        self.board.can_place(tile) && (*tile != Tile::Ocean || self.oceans < MAX_OCEANS)
     }
     pub fn is_over(&self) -> bool {
         self.generation > LAST_GENERATION
@@ -143,6 +137,21 @@ impl Game {
     pub fn oceans(&self) -> i32 {
         self.oceans
     }
+    pub fn generation(&self) -> i32 {
+        self.generation
+    }
+    pub fn tr(&self) -> i32 {
+        self.tr
+    }
+    pub fn victory_points(&self) -> i32 {
+        self.victory_points
+    }
+    pub fn tiles(&self) -> &[Vec<Tile>; 9] {
+        self.board.tiles()
+    }
+    pub fn cards_in_hand(&self) -> &HashSet<CardId> {
+        &self.cards_in_hand
+    }
 }
 
 impl Display for Game {
@@ -152,7 +161,11 @@ impl Display for Game {
             writeln!(f, "{}", CARD_COMPENDIUM.get(card_id).unwrap())?;
         }
 
-        writeln!(f, "Generation: {}", max(LAST_GENERATION, self.generation))?;
+        writeln!(
+            f,
+            "Generation: {}",
+            cmp::min(LAST_GENERATION, self.generation)
+        )?;
         writeln!(
             f,
             "Terraforming Rating: {}; Victory Points: {}",
@@ -214,14 +227,6 @@ impl Display for Game {
                 writeln!(f, "You won with {} victory points!", self.victory_points)?;
             } else {
                 writeln!(f, "You lost.")?;
-            }
-        } else {
-            write!(f, "NEXT ACTION: ")?;
-
-            if self.tile_stack.is_empty() {
-                writeln!(f, "Regular")?;
-            } else {
-                writeln!(f, "Place {:?}", self.tile_stack.last().unwrap())?;
             }
         }
 
