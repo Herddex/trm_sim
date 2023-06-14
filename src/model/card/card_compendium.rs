@@ -7,15 +7,13 @@ use crate::model::card::requirement::Requirement;
 use crate::model::card::{Card, CardId};
 use crate::model::game::board::tile::Tile;
 use crate::model::game::board::tile::Tile::{Greenery, Ocean};
-use crate::model::game::mutation::Mutation::{
-    CardDraw, OxygenIncrease, Production, Resource, TemperatureIncrease, TilePlacing, Tr,
-};
-use crate::model::resource::Resource::{Energy, Heat, MegaCredit, Plant, Steel, Titanium};
+use crate::model::game::mutation::Mutation::*;
+use crate::model::resource::Resource::*;
 use crate::model::tag::Tag;
 use crate::model::tag::Tag::{Builder, City, Earth, Jovian, Microbe, Power, Science, Space};
 
 lazy_static! {
-    pub static ref CARD_COMPENDIUM: HashMap<CardId, Card> = build_card_compendium();
+    pub(crate) static ref CARD_COMPENDIUM: HashMap<CardId, Card> = build_card_compendium();
     pub static ref ALL_CARD_IDS_IN_ASCENDING_ORDER: Vec<CardId> = build_card_id_list();
 }
 
@@ -41,7 +39,7 @@ fn build_card_compendium() -> HashMap<CardId, Card> {
             4,
             CardBuilder::new()
                 .cost(13)
-                .requirement(Requirement::MinOcean(3))
+                .requirement(Requirement::MinOceanCount(3))
                 .mutation(Production(MegaCredit, -1))
                 .mutation(Production(Plant, 2)),
         ),
@@ -57,7 +55,7 @@ fn build_card_compendium() -> HashMap<CardId, Card> {
             space_event()
                 .cost(21)
                 .mutation(TemperatureIncrease(1))
-                .mutation(TilePlacing(Ocean)),
+                .mutation(TilePlacement(Ocean)),
         ),
         (
             11,
@@ -95,7 +93,7 @@ fn build_card_compendium() -> HashMap<CardId, Card> {
                 .cost(16)
                 .tags(vec![Earth])
                 .mutation(Resource(Plant, 3))
-                .mutation(TilePlacing(Ocean)),
+                .mutation(TilePlacement(Ocean)),
         ),
         (
             22,
@@ -103,7 +101,7 @@ fn build_card_compendium() -> HashMap<CardId, Card> {
                 .cost(15)
                 .mutation(Production(MegaCredit, -2))
                 .mutation(Production(Heat, 3))
-                .mutation(TilePlacing(Ocean)),
+                .mutation(TilePlacement(Ocean)),
         ),
         (
             26,
@@ -138,13 +136,13 @@ fn build_card_compendium() -> HashMap<CardId, Card> {
                 .mutation(Production(Energy, -1))
                 .mutation(Production(Steel, 2)),
         ),
-        (36, CardBuilder::new().cost(14).event().mutation(Tr(2))),
+        (36, CardBuilder::new().cost(14).event().mutation(TR(2))),
         (
             37,
             space_event()
                 .cost(31)
                 .mutation(Production(Plant, 1))
-                .mutation(Tr(2))
+                .mutation(TR(2))
                 .mutation(TemperatureIncrease(1)),
         ),
         (
@@ -200,7 +198,7 @@ fn build_card_compendium() -> HashMap<CardId, Card> {
             CardBuilder::new()
                 .cost(10)
                 .tags(vec![Tag::Plant])
-                .requirement(Requirement::MinOcean(5))
+                .requirement(Requirement::MinOceanCount(5))
                 .mutation(Production(Plant, 2))
                 .mutation(Resource(Plant, 1)),
         ),
@@ -216,8 +214,8 @@ fn build_card_compendium() -> HashMap<CardId, Card> {
             CardBuilder::new()
                 .cost(18)
                 .requirement(Requirement::MinTemperature(0))
-                .mutation(TilePlacing(Ocean))
-                .mutation(TilePlacing(Ocean))
+                .mutation(TilePlacement(Ocean))
+                .mutation(TilePlacement(Ocean))
                 .victory_points(2),
         ),
         (
@@ -225,7 +223,7 @@ fn build_card_compendium() -> HashMap<CardId, Card> {
             CardBuilder::new()
                 .cost(17)
                 .tags(vec![Tag::Plant])
-                .requirement(Requirement::MinOcean(6))
+                .requirement(Requirement::MinOceanCount(6))
                 .mutation(Production(MegaCredit, 2))
                 .mutation(Production(Plant, 3))
                 .mutation(Resource(Plant, 2))
@@ -264,7 +262,7 @@ fn build_card_compendium() -> HashMap<CardId, Card> {
             space_event()
                 .cost(23)
                 .mutation(OxygenIncrease(1))
-                .mutation(TilePlacing(Ocean))
+                .mutation(TilePlacement(Ocean))
                 .mutation(Resource(Plant, 2)),
         ),
         (
@@ -279,15 +277,15 @@ fn build_card_compendium() -> HashMap<CardId, Card> {
             78,
             space_event()
                 .cost(23)
-                .mutation(TilePlacing(Ocean))
-                .mutation(TilePlacing(Ocean)),
+                .mutation(TilePlacement(Ocean))
+                .mutation(TilePlacement(Ocean)),
         ),
         (
             80,
             space_event()
                 .cost(36)
-                .mutation(TilePlacing(Ocean))
-                .mutation(TilePlacing(Ocean))
+                .mutation(TilePlacement(Ocean))
+                .mutation(TilePlacement(Ocean))
                 .mutation(TemperatureIncrease(2)),
         ),
         (
@@ -387,7 +385,7 @@ fn build_card_compendium() -> HashMap<CardId, Card> {
             119,
             CardBuilder::new()
                 .cost(2)
-                .requirement(Requirement::MaxOcean(3))
+                .requirement(Requirement::MaxOceanCount(3))
                 .victory_points(1),
         ),
         (
@@ -395,7 +393,7 @@ fn build_card_compendium() -> HashMap<CardId, Card> {
             CardBuilder::new()
                 .cost(4)
                 .tags(vec![Tag::Plant])
-                .requirement(Requirement::MinOcean(3))
+                .requirement(Requirement::MinOceanCount(3))
                 .mutation(Production(Plant, 1))
                 .mutation(Resource(Plant, -1)),
         ),
@@ -412,7 +410,7 @@ fn build_card_compendium() -> HashMap<CardId, Card> {
             CardBuilder::new()
                 .cost(11)
                 .event()
-                .mutation(TilePlacing(Ocean)),
+                .mutation(TilePlacement(Ocean)),
         ),
         (
             132,
@@ -434,7 +432,7 @@ fn build_card_compendium() -> HashMap<CardId, Card> {
             space_event()
                 .cost(36)
                 .tags(vec![Earth])
-                .mutation(TilePlacing(Ocean))
+                .mutation(TilePlacement(Ocean))
                 .mutation(CardDraw(2))
                 .mutation(Resource(Plant, 5))
                 .victory_points(2),
@@ -453,7 +451,7 @@ fn build_card_compendium() -> HashMap<CardId, Card> {
             CardBuilder::new()
                 .cost(8)
                 .tags(vec![Tag::Plant])
-                .requirement(Requirement::MinOcean(3))
+                .requirement(Requirement::MinOceanCount(3))
                 .mutation(Production(Plant, 2))
                 .mutation(Resource(Plant, -2)),
         ),
@@ -485,7 +483,7 @@ fn build_card_compendium() -> HashMap<CardId, Card> {
             161,
             space_event()
                 .cost(15)
-                .mutation(TilePlacing(Ocean))
+                .mutation(TilePlacement(Ocean))
                 .mutation(CardDraw(1)),
         ),
         (
@@ -530,7 +528,7 @@ fn build_card_compendium() -> HashMap<CardId, Card> {
                 .tags(vec![Builder])
                 .mutation(Production(Energy, -2))
                 .mutation(Production(Plant, 1))
-                .mutation(Tr(1)),
+                .mutation(TR(1)),
         ),
         (
             176,
@@ -565,7 +563,7 @@ fn build_card_compendium() -> HashMap<CardId, Card> {
                 .cost(5)
                 .event()
                 .requirement(Requirement::MinTemperature(2))
-                .mutation(TilePlacing(Ocean)),
+                .mutation(TilePlacement(Ocean)),
         ),
         (
             190,
@@ -581,7 +579,7 @@ fn build_card_compendium() -> HashMap<CardId, Card> {
                 .cost(8)
                 .event()
                 .requirement(Requirement::MinTemperature(-8))
-                .mutation(TilePlacing(Ocean)),
+                .mutation(TilePlacement(Ocean)),
         ),
         (
             193,
@@ -589,7 +587,7 @@ fn build_card_compendium() -> HashMap<CardId, Card> {
                 .cost(15)
                 .tags(vec![Tag::Plant])
                 .requirement(Requirement::Tag(Science, 2))
-                .mutation(TilePlacing(Greenery)),
+                .mutation(TilePlacement(Greenery)),
         ),
         (
             203,
@@ -604,7 +602,7 @@ fn build_card_compendium() -> HashMap<CardId, Card> {
                 .cost(8)
                 .tags(vec![Builder])
                 .mutation(Production(Energy, -1))
-                .mutation(Tr(2)),
+                .mutation(TR(2)),
         ),
     ]
     .into_iter()
@@ -620,7 +618,7 @@ fn martian_city() -> CardBuilder {
     CardBuilder::new()
         .tags(vec![City, Builder])
         .mutation(Production(Energy, -1))
-        .mutation(TilePlacing(Tile::City))
+        .mutation(TilePlacement(Tile::City))
 }
 
 fn build_card_id_list() -> Vec<CardId> {

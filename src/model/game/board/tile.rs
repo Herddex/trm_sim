@@ -3,10 +3,15 @@ use std::fmt::{Display, Formatter};
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum Tile {
-    Empty,
     City,
     Greenery,
     Ocean,
+}
+
+impl Tile {
+    pub fn is_owned(tile: Self) -> bool {
+        matches!(tile, City | Greenery)
+    }
 }
 
 impl Display for Tile {
@@ -15,7 +20,6 @@ impl Display for Tile {
             f,
             "{}",
             match self {
-                Empty => '*',
                 City => 'C',
                 Greenery => 'G',
                 Ocean => 'O',

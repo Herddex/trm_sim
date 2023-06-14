@@ -12,35 +12,29 @@ type VictoryPoints = i32;
 
 #[derive(Clone)]
 pub struct Board {
-    tiles: [Vec<Tile>; 9],
+    tiles: [Vec<Option<Tile>>; 9],
     game_map: &'static GameMap,
-    can_place_greenery_adjacent_to_owned_tiles: bool,
 }
 
 impl Board {
     pub fn new(map: &'static GameMap) -> Self {
         Self {
             tiles: [
-                vec![Empty; 5],
-                vec![Empty; 6],
-                vec![Empty; 7],
-                vec![Empty; 8],
-                vec![Empty; 9],
-                vec![Empty; 8],
-                vec![Empty; 7],
-                vec![Empty; 6],
-                vec![Empty; 5],
+                vec![None; 5],
+                vec![None; 6],
+                vec![None; 7],
+                vec![None; 8],
+                vec![None; 9],
+                vec![None; 8],
+                vec![None; 7],
+                vec![None; 6],
+                vec![None; 5],
             ],
             game_map: map,
-            can_place_greenery_adjacent_to_owned_tiles: false,
         }
     }
 
-    pub fn tiles(&self) -> &[Vec<Tile>; 9] {
-        &self.tiles
-    }
-
-    pub fn place_tile(&mut self, tile: Tile) -> i32 {
+    pub fn place_tile_greedily(&mut self, tile: Tile) -> i32 {
         match tile {
             Ocean => {
                 self.place_ocean_greedily();
@@ -48,7 +42,6 @@ impl Board {
             }
             Greenery => self.place_greenery_greedily(),
             City => self.place_city_greedily(),
-            Empty => 0,
         }
     }
 
@@ -60,9 +53,9 @@ impl Board {
             .game_map
             .ocean_positions()
             .iter()
-            .find(|(i, j)| self.tiles[*i][*j] == Empty)
+            .find(|(i, j)| self.tiles[*i][*j].is_none())
             .expect("There should be at least one empty ocean position");
-        self.tiles[*i][*j] = Ocean;
+        self.tiles[*i][*j] = Some(Ocean);
     }
 
     fn place_greenery_greedily(&mut self) -> VictoryPoints {
@@ -71,30 +64,39 @@ impl Board {
             legal_positions.extend(
                 row.iter()
                     .enumerate()
-                    .filter(|(j, _)| self.can_place_greenery_at((i, *j)))
+                    .filter(|(j, _)| self.can_place_adjacent_greenery_at((i, *j)))
                     .map(|(j, _)| (i, j)),
             );
         }
 
+        if legal_positions.is_empty() {
+            for (i, row) in self.tiles.iter().enumerate() {
+                legal_positions.extend(
+                    row.iter()
+                        .enumerate()
+                        .filter(|(j, _)| self.can_place_non_ocean_tile_at((i, *j)))
+                        .map(|(j, _)| (i, j)),
+                );
+            }
+        }
+
         legal_positions.sort_by(|x, y| {
-            self.neighbours_of(*x, City)
-                .cmp(&self.neighbours_of(*y, City))
+            self.get_neighbour_count_by_type(*x, City)
+                .cmp(&self.get_neighbour_count_by_type(*y, City))
         });
 
         match legal_positions.last() {
             None => 0,
             Some((i, j)) => {
-                self.tiles[*i][*j] = Greenery;
-                self.can_place_greenery_adjacent_to_owned_tiles = true;
-                self.neighbours_of((*i, *j), City) as i32 + 1
+                self.tiles[*i][*j] = Some(Greenery);
+                self.get_neighbour_count_by_type((*i, *j), City) as i32 + 1
             }
         }
     }
 
-    fn can_place_greenery_at(&self, position: (usize, usize)) -> bool {
+    fn can_place_adjacent_greenery_at(&self, position: (usize, usize)) -> bool {
         self.can_place_non_ocean_tile_at(position)
-            && (!self.can_place_greenery_adjacent_to_owned_tiles
-                || self.has_owned_tiles_around(position.0, position.1))
+            && self.has_owned_tiles_around(position.0, position.1)
     }
 
     /**
@@ -111,44 +113,41 @@ impl Board {
         }
 
         legal_positions.sort_by(|x, y| {
-            self.neighbours_of(*x, Greenery)
-                .cmp(&self.neighbours_of(*y, Greenery))
+            self.get_neighbour_count_by_type(*x, Greenery)
+                .cmp(&self.get_neighbour_count_by_type(*y, Greenery))
         });
 
         match legal_positions.last() {
             None => 0,
             Some((i, j)) => {
-                self.tiles[*i][*j] = City;
-                self.can_place_greenery_adjacent_to_owned_tiles = true;
-                self.neighbours_of((*i, *j), Greenery) as i32
+                self.tiles[*i][*j] = Some(City);
+                self.get_neighbour_count_by_type((*i, *j), Greenery) as i32
             }
         }
     }
 
     fn can_place_city_at(&self, position: (usize, usize)) -> bool {
-        self.can_place_non_ocean_tile_at(position) && self.neighbours_of(position, City) == 0
+        self.can_place_non_ocean_tile_at(position)
+            && self.get_neighbour_count_by_type(position, City) == 0
     }
 
     fn can_place_non_ocean_tile_at(&self, position: (usize, usize)) -> bool {
-        self.tiles[position.0][position.1] == Empty
+        self.tiles[position.0][position.1].is_none()
             && !self.game_map.ocean_positions().contains(&position)
     }
 
-    fn neighbours_of(&self, position: (usize, usize), tile_type: Tile) -> usize {
+    fn get_neighbour_count_by_type(&self, position: (usize, usize), tile_type: Tile) -> usize {
         Self::neighbour_positions_of(position.0, position.1)
             .into_iter()
-            .filter(|position| self.tiles[position.0][position.1] == tile_type)
+            .filter(|position| self.tiles[position.0][position.1] == Some(tile_type))
             .count()
     }
 
     fn has_owned_tiles_around(&self, row: usize, column: usize) -> bool {
         Self::neighbour_positions_of(row, column)
             .iter()
-            .any(|(row, column)| Self::is_owned_tile(&self.tiles[*row][*column]))
-    }
-
-    fn is_owned_tile(tile: &Tile) -> bool {
-        matches!(tile, Greenery | City)
+            .flat_map(|(i, j)| self.tiles[*i][*j])
+            .any(Tile::is_owned)
     }
 
     fn neighbour_positions_of(row: usize, column: usize) -> Vec<(usize, usize)> {
@@ -230,10 +229,17 @@ impl Display for Board {
                 write!(f, " ")?;
             }
             for (column, tile) in row_tiles.iter().enumerate() {
-                if *tile == Empty && self.game_map.is_ocean_position((row, column)) {
-                    write!(f, "_ ")?;
-                } else {
-                    write!(f, "{} ", *tile)?;
+                match tile {
+                    None => write!(
+                        f,
+                        "{} ",
+                        if self.game_map.is_ocean_position((row, column)) {
+                            "_"
+                        } else {
+                            "*"
+                        }
+                    )?,
+                    Some(tile) => write!(f, "{} ", *tile)?,
                 }
             }
             writeln!(f)?;

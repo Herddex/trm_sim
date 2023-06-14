@@ -1,15 +1,18 @@
 use crate::action::invalid_action::{ActionResult, InvalidActionError};
 use crate::model::card::CardId;
 use crate::model::game::board::tile::Tile;
-use crate::model::game::{Game, MAX_OCEANS, MAX_OXYGEN, MAX_TEMPERATURE};
+use crate::model::game::{
+    Game, MAX_OCEANS, MAX_OXYGEN, MAX_TEMPERATURE, MINIMUM_MEGA_CREDITS_PRODUCTION,
+    MINIMUM_PRODUCTION_OF_NON_MEGA_CREDIT_RESOURCES,
+};
 use crate::model::resource::Resource;
 use crate::model::resource::Resource::*;
-use std::cmp::min;
+use std::cmp::{max, min};
 
 pub fn minimum_production_value_of(resource: &Resource) -> i32 {
     match resource {
-        MegaCredit => -5,
-        _ => 0,
+        MegaCredit => MINIMUM_MEGA_CREDITS_PRODUCTION,
+        _ => MINIMUM_PRODUCTION_OF_NON_MEGA_CREDIT_RESOURCES,
     }
 }
 
@@ -23,12 +26,10 @@ pub fn draw_cards(game: &mut Game, count: i32) {
     }
 }
 
-pub fn increase_oxygen_if_not_maxed_out(game: &mut Game, mut amount: u32) {
-    while game.oxygen < MAX_OXYGEN && amount > 0 {
-        game.oxygen += 1;
-        increase_tr(game, 1);
-        amount -= 1;
-    }
+pub fn increase_oxygen_if_not_maxed_out(game: &mut Game, amount: i32) {
+    let amount = max(0, min(amount, MAX_OXYGEN - game.oxygen));
+    game.oxygen += amount;
+    increase_tr(game, amount);
 }
 
 pub fn increase_tr(game: &mut Game, amount: i32) {
@@ -87,7 +88,7 @@ pub fn place_tile_greedily(game: &mut Game, tile: &Tile) {
         return;
     }
 
-    let earned_victory_points = game.board.place_tile(*tile);
+    let earned_victory_points = game.board.place_tile_greedily(*tile);
     game.victory_points += earned_victory_points;
 
     match tile {
@@ -131,7 +132,7 @@ pub fn resource_change(game: &mut Game, resource: &Resource, delta: i32) -> Acti
     }
 }
 
-pub fn increase_temperature_if_not_maxed_out(game: &mut Game, mut amount: u32) {
+pub fn increase_temperature_if_not_maxed_out(game: &mut Game, mut amount: i32) {
     while game.temperature < MAX_TEMPERATURE && amount > 0 {
         game.temperature += 2;
         amount -= 1;

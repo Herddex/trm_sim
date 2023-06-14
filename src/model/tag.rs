@@ -1,7 +1,7 @@
 use std::fmt::{Display, Formatter};
 
 #[derive(Clone, Eq, PartialEq, Hash, Debug, Copy)]
-pub enum Tag {
+pub(crate) enum Tag {
     Builder,
     Space,
     Earth,

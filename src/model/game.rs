@@ -9,25 +9,27 @@ use board::Board;
 use crate::model::card::card_compendium::CARD_COMPENDIUM;
 use crate::model::card::CardId;
 use crate::model::game::board::game_map::GameMap;
-use crate::model::game::board::tile::Tile;
 use crate::model::resource::Resource;
-use crate::model::resource::Resource::{Energy, Heat, MegaCredit, Plant, Steel, Titanium};
+use crate::model::resource::Resource::*;
 use crate::model::tag::Tag;
 
 pub(crate) mod board;
 pub(crate) mod mutation;
 
-const INITIAL_TR: i32 = 14;
-const INITIAL_TEMPERATURE: i32 = -30;
-const INITIAL_OXYGEN: i32 = 0;
-const INITIAL_MEGA_CREDITS: i32 = 42;
-const INITIAL_PRODUCTION: i32 = 1;
+pub const INITIAL_TR: i32 = 14;
+pub const INITIAL_TEMPERATURE: i32 = -30;
+pub const INITIAL_OXYGEN: i32 = 0;
+pub const INITIAL_MEGA_CREDITS: i32 = 42;
+pub const INITIAL_PRODUCTION: i32 = 1;
 
-const MAX_TEMPERATURE: i32 = 8;
-const MAX_OXYGEN: i32 = 14;
-const MAX_OCEANS: i32 = 9;
+pub const MAX_TEMPERATURE: i32 = 8;
+pub const MAX_OXYGEN: i32 = 14;
+pub const MAX_OCEANS: i32 = 9;
 
-const LAST_GENERATION: i32 = 14;
+pub const LAST_GENERATION: i32 = 14;
+
+const MINIMUM_MEGA_CREDITS_PRODUCTION: i32 = -5;
+const MINIMUM_PRODUCTION_OF_NON_MEGA_CREDIT_RESOURCES: i32 = 0;
 
 #[derive(Clone)]
 pub struct Game {
@@ -122,7 +124,7 @@ impl Game {
     pub fn production(&self, resource: &Resource) -> i32 {
         *self.productions.get(resource).unwrap()
     }
-    pub fn tag(&self, tag: Tag) -> i32 {
+    pub(crate) fn tag(&self, tag: Tag) -> i32 {
         *self.tags.get(&tag).unwrap()
     }
     fn resource_mut(&mut self, resource: &Resource) -> &mut i32 {
@@ -145,9 +147,6 @@ impl Game {
     }
     pub fn victory_points(&self) -> i32 {
         self.victory_points
-    }
-    pub fn tiles(&self) -> &[Vec<Tile>; 9] {
-        self.board.tiles()
     }
     pub fn cards_in_hand(&self) -> &HashSet<CardId> {
         &self.cards_in_hand
@@ -173,15 +172,15 @@ impl Display for Game {
         )?;
         writeln!(
             f,
-            "Oxygen: {} / {}%; Temperature: {:+} / {:+} C; Oceans: {} / {}",
+            "Oxygen: {} / {}%; Temperature: {:+} / {:+}C; Oceans: {} / {}",
             self.oxygen, MAX_OXYGEN, self.temperature, MAX_TEMPERATURE, self.oceans, MAX_OCEANS
         )?;
         writeln!(f)?;
 
-        writeln!(f, "Resources / production:")?;
+        writeln!(f, "Resources / Production:")?;
         writeln!(
             f,
-            "Megacredits:  {} / {}",
+            "Mega Credits:  {} / {}",
             self.resource(&MegaCredit),
             self.production(&MegaCredit)
         )?;

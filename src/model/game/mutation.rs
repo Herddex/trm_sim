@@ -11,17 +11,17 @@ use crate::model::resource::Resource::*;
 use crate::model::tag::Tag;
 
 #[derive(Clone)]
-pub enum Mutation {
+pub(crate) enum Mutation {
     Composite(Vec<Mutation>),
     Production(Resource, i32),
     Resource(Resource, i32),
     BuilderCardPayment(i32),
     SpaceCardPayment(i32),
-    Tr(i32),
-    TemperatureIncrease(u32),
-    OxygenIncrease(u32),
+    TR(i32),
+    TemperatureIncrease(i32),
+    OxygenIncrease(i32),
     VictoryPoint(i32),
-    TilePlacing(Tile),
+    TilePlacement(Tile),
     Tag(Tag),
     CardDraw(i32),
     CardPlay(CardId),
@@ -59,7 +59,7 @@ impl Mutation {
             Mutation::Resource(resource, delta) => {
                 mutation_helper::resource_change(game, resource, *delta)?
             }
-            Mutation::Tr(amount) => mutation_helper::increase_tr(game, *amount),
+            Mutation::TR(amount) => mutation_helper::increase_tr(game, *amount),
             Mutation::TemperatureIncrease(amount) => {
                 mutation_helper::increase_temperature_if_not_maxed_out(game, *amount)
             }
@@ -67,7 +67,7 @@ impl Mutation {
                 mutation_helper::increase_oxygen_if_not_maxed_out(game, *amount)
             }
             Mutation::VictoryPoint(amount) => game.victory_points += amount,
-            Mutation::TilePlacing(tile) => mutation_helper::place_tile_greedily(game, tile),
+            Mutation::TilePlacement(tile) => mutation_helper::place_tile_greedily(game, tile),
             Mutation::Tag(tag) => *game.tags.get_mut(tag).expect("Tag should be in the map") += 1,
             Mutation::CardDraw(amount) => mutation_helper::draw_cards(game, *amount),
             Mutation::CardPlay(card_id) => mutation_helper::play_card(game, *card_id)?,
@@ -99,13 +99,13 @@ impl Display for Mutation {
             }
             Mutation::BuilderCardPayment(cost) => write!(f, "Cost (Steel can be used): {}", cost)?,
             Mutation::SpaceCardPayment(cost) => write!(f, "Cost (Titanium can be used): {}", cost)?,
-            Mutation::Tr(amount) => write!(f, "{} TR", amount)?,
+            Mutation::TR(amount) => write!(f, "{} TR", amount)?,
             Mutation::TemperatureIncrease(amount) => {
                 write!(f, "Increase temperature {} step(s)", amount)?
             }
             Mutation::OxygenIncrease(amount) => write!(f, "Increase oxygen {} step(s)", amount)?,
             Mutation::VictoryPoint(amount) => write!(f, "{} victory point(s)", amount)?,
-            Mutation::TilePlacing(tile) => write!(f, "Place tile: {:?}", tile)?,
+            Mutation::TilePlacement(tile) => write!(f, "Place tile: {:?}", tile)?,
             Mutation::Tag(tag) => write!(f, "{:?} Tag", tag)?,
             Mutation::CardDraw(amount) => write!(f, "Draw {} cards", amount)?,
             Mutation::CardPlay(card_id) => write!(f, "Card #{}", *card_id)?,
@@ -266,7 +266,7 @@ mod tests {
         let prev_tr = game.tr;
         let prev_vp = game.victory_points;
 
-        assert!(game.apply(&Mutation::Tr(2)).is_ok());
+        assert!(game.apply(&Mutation::TR(2)).is_ok());
         assert_eq!(game.tr, prev_tr + 2);
         assert_eq!(game.victory_points, prev_vp + 2);
     }

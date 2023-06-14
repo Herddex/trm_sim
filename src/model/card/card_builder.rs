@@ -5,84 +5,90 @@ use crate::model::resource::Resource;
 use crate::model::tag::Tag;
 use crate::model::tag::Tag::{Builder, Space};
 
-pub struct CardBuilder {
-    id: CardId,
+pub(crate) struct CardBuilder {
+    card_id: CardId,
     cost: i32,
     requirement: Option<Requirement>,
     tags: Vec<Tag>,
     victory_points: i32,
-    mutations: Vec<Mutation>,
+    other_mutations: Vec<Mutation>,
     event: bool,
 }
 
 impl CardBuilder {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
-            id: 0,
+            card_id: 0,
             cost: 0,
             requirement: None,
             tags: Vec::new(),
             victory_points: 0,
-            mutations: Vec::new(),
+            other_mutations: Vec::new(),
             event: false,
         }
     }
 
-    pub fn id(mut self, id: CardId) -> Self {
-        self.id = id;
+    pub(crate) fn id(mut self, id: CardId) -> Self {
+        self.card_id = id;
         self
     }
 
-    pub fn cost(mut self, cost: i32) -> Self {
+    pub(crate) fn cost(mut self, cost: i32) -> Self {
         self.cost += cost;
         self
     }
 
-    pub fn tags(mut self, mut tags: Vec<Tag>) -> Self {
+    pub(crate) fn tags(mut self, mut tags: Vec<Tag>) -> Self {
         self.tags.append(&mut tags);
         self
     }
 
-    pub fn event(mut self) -> Self {
+    pub(crate) fn event(mut self) -> Self {
         self.event = true;
         self
     }
 
-    pub fn requirement(mut self, requirement: Requirement) -> Self {
+    pub(crate) fn requirement(mut self, requirement: Requirement) -> Self {
         self.requirement = Some(requirement);
         self
     }
 
-    pub fn mutation(mut self, mutation: Mutation) -> Self {
-        self.mutations.push(mutation);
+    pub(crate) fn mutation(mut self, mutation: Mutation) -> Self {
+        self.other_mutations.push(mutation);
         self
     }
 
-    pub fn victory_points(mut self, amount: i32) -> Self {
+    pub(crate) fn victory_points(mut self, amount: i32) -> Self {
         self.victory_points += amount;
         self
     }
 
-    pub fn build(mut self) -> Card {
-        let mut mutations = Vec::new();
-        mutations.push(if self.tags.contains(&Builder) {
+    pub(crate) fn build(mut self) -> Card {
+        let mut mutations = vec![
+            Mutation::CardPlay(self.card_id),
+            self.get_payment_mutation(),
+        ];
+
+        if self.victory_points > 0 {
+            mutations.push(Mutation::VictoryPoint(self.victory_points))
+        }
+
+        if !self.event {
+            mutations.extend(self.tags.iter().map(|tag| Mutation::Tag(*tag)));
+        }
+
+        mutations.append(&mut self.other_mutations);
+
+        Card::new(Mutation::Composite(mutations), self.requirement)
+    }
+
+    fn get_payment_mutation(&self) -> Mutation {
+        if self.tags.contains(&Builder) {
             Mutation::BuilderCardPayment(self.cost)
         } else if self.tags.contains(&Space) {
             Mutation::SpaceCardPayment(self.cost)
         } else {
             Mutation::Resource(Resource::MegaCredit, -self.cost)
-        });
-
-        if self.victory_points > 0 {
-            mutations.push(Mutation::VictoryPoint(self.victory_points))
         }
-        if !self.event {
-            for tag in self.tags {
-                mutations.push(Mutation::Tag(tag))
-            }
-        }
-        mutations.append(&mut self.mutations);
-
-        Card::new(self.id, mutations, self.requirement)
     }
 }

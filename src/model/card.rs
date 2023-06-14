@@ -5,31 +5,25 @@ pub(crate) mod requirement;
 use crate::action::invalid_action::{ActionResult, InvalidActionError};
 use crate::model::card::requirement::Requirement;
 use crate::model::game::mutation::Mutation;
-use crate::model::game::mutation::Mutation::Composite;
 use crate::model::game::Game;
 use std::fmt::{Display, Formatter};
 
-pub type CardId = usize;
+pub type CardId = i32;
 
-pub struct Card {
+pub(crate) struct Card {
     mutation: Mutation,
     requirement: Option<Requirement>,
 }
 
 impl Card {
-    pub fn new(
-        id: CardId,
-        mut immediate_effects: Vec<Mutation>,
-        requirement: Option<Requirement>,
-    ) -> Self {
-        immediate_effects.insert(0, Mutation::CardPlay(id));
+    pub(crate) fn new(mutation: Mutation, requirement: Option<Requirement>) -> Self {
         Self {
-            mutation: Composite(immediate_effects),
+            mutation,
             requirement,
         }
     }
 
-    pub fn play(&self, game: &mut Game) -> ActionResult {
+    pub(crate) fn play(&self, game: &mut Game) -> ActionResult {
         if let Some(requirement) = &self.requirement {
             if !requirement.is_fulfilled(game) {
                 return Err(InvalidActionError::new(format!(

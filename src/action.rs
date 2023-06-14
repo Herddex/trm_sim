@@ -7,7 +7,7 @@ use crate::model::game::Game;
 use crate::model::resource::Resource;
 use lazy_static::lazy_static;
 
-pub mod invalid_action;
+pub(crate) mod invalid_action;
 
 lazy_static! {
     static ref HEAT_CONVERSION: Mutation = Mutation::Composite(vec![
@@ -16,20 +16,20 @@ lazy_static! {
     ]);
     static ref PLANT_CONVERSION: Mutation = Mutation::Composite(vec![
         Mutation::Resource(Resource::Plant, -8),
-        Mutation::TilePlacing(Tile::Greenery)
+        Mutation::TilePlacement(Tile::Greenery)
     ]);
     static ref STANDARD_CITY: Mutation = Mutation::Composite(vec![
         Mutation::Resource(Resource::MegaCredit, -25),
-        Mutation::TilePlacing(Tile::City),
+        Mutation::TilePlacement(Tile::City),
         Mutation::Production(Resource::MegaCredit, 1)
     ]);
     static ref STANDARD_GREENERY: Mutation = Mutation::Composite(vec![
         Mutation::Resource(Resource::MegaCredit, -23),
-        Mutation::TilePlacing(Tile::Greenery)
+        Mutation::TilePlacement(Tile::Greenery)
     ]);
     static ref STANDARD_AQUIFER: Mutation = Mutation::Composite(vec![
         Mutation::Resource(Resource::MegaCredit, -18),
-        Mutation::TilePlacing(Tile::Ocean),
+        Mutation::TilePlacement(Tile::Ocean),
     ]);
     static ref STANDARD_ASTEROID: Mutation = Mutation::Composite(vec![
         Mutation::Resource(Resource::MegaCredit, -14),
